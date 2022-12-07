@@ -1,12 +1,1 @@
 
-
-#month-schedule .the-day a{
-  display: block;
-  text-decoration: none;
-}
-
-
-#week-schedule .hour-schedule{
-  width: 150px;
-  height: 70px;
-}

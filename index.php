@@ -1,41 +1,53 @@
 <?php
   require_once(dirname(__FILE__).'/function.php');
   
+  $empId = 154;
 
-  if(isset($_GET['y']) && isset($_GET['m']) && isset($_GET['d'])){
-    list($y, $m, $d) = [escape($_GET['y']), escape($_GET['m']), escape($_GET['d'])];    
+  if(isset($_GET['date'])){
+    $date = escape($_GET['date']);
+    list($y, $m, $d) = explode('-', $date);   
   }else{ 
-    list($y, $m, $d) = getToday();
+    $date = getToday();
+    list($y, $m, $d) = explode('-', $date);   
   }
 
-  $date = createCalendar($m, $y);
+  $dateArray = createCalendar($m, $y);
+  $weekday = getWeekday($date, $dateArray);
 
 
-  var_dump($date);
 
-  
-/*
-  if(isset($_GET['today'])) $today = escape($_GET['today']);
-  else $today = $current -> format('d');
 
-  $beginHour = 8; //就業時刻
-  $endHour = 22; //退勤時刻
+  if(isset($_POST['submitSearch'])){
+    $keyword = escape($_POST['keyword']);
+    $checkEmpty = preg_replace('/( |　)/', '' , $keyword);
+    if(empty($checkEmpty)){
+      header('Location:Location:http://localhost/ScheShare/index.php');
+      exit;
+    }
+    $Employees = selectEmp($keyword);
+    
+    var_dump($Employees);
 
-  $userId = 1;
+  }
+
+
+
 
   if(isset($_POST['submit_add'])){
     $title = escape($_POST['title']);
-    $beginTime = escape($_POST['date']." ".$_POST['begin']);
-    $endTime = escape($_POST['date']." ".$_POST['end']);
+    $date = $_POST['date'];
+    $startTime = $_POST['start'];
+    $endTime = $_POST['end'];
     $memo = escape($_POST['memo']);
-
-    
-    var_dump($beginTime);
-    insertSchedule($userId, $beginTime, $endTime, $title, $memo);
-    header("Location:http://localhost/ScheShare/index.php");
-    exit;
+    if(empty($title)) $error[] = "タイトルを入力してください。";
+    if($startTime >= $endTime) $error[] = "終了時刻を開始時刻より遅く設定してください"; 
+    if(empty($error)){
+      insertSchedule($empId, $date, $startTime, $endTime, $title, $memo);
+      header("Location:http://localhost/ScheShare/index.php");
+      exit;
+    }
   }
-*/
+
 
 
 ?>
@@ -49,92 +61,81 @@
   </head>
   
     <h1>ScheShare</h1>
-    <a href="index.php?y=<?= $m-1 > 0? $y : $y-1 ?>&m=<?= $m-1 > 0? $m-1 : 12 ?>&d=1">◁</a>
+
+    <form action="" method="post">
+      <input type="text" name="keyword" placeholder="社員情報">
+      <button type="submit" name="submitSearch" value="1">検索</button>
+    </form>
+    <ul>
+      <li></li>
+    </ul>
+
+
+    <a href="index.php?date=<?= $m-1 > 0? $y."-".($m-1)."-1" : ($y-1)."-12-1" ?>">◁</a>
     <span><?= $y ?>年<?= $m ?>月</span>
-    <a href="index.php?y=<?= $m+1 <= 12? $y : $y+1 ?>&m=<?= $m+1 <= 12? $m+1 : 1 ?>&d=1">▷</a>
-
-
+    <a href="index.php?date=<?= $m+1 <= 12? $y."-".($m+1)."-1" : ($y+1)."-1-1" ?>">▷</a>
     <!-- 月毎のカレンダー -->
-    <table id="month-schedule" border="1">
+    <table id="calendar-table" border="1">
       <tr>
         <!-- 曜日の表示 -->
         <?php for($i=0; $i<7; $i++): ?>
           <th><?= getWeekName($i); ?></th>
         <?php endfor; ?>
       </tr>
-      <tr>
-        <!-- 月初セル埋め合わせ -->
-        <?php for($i=0; $i<getWeekNum($m, 1, $y); $i++): ?>
-          <td></td>
-        <?php endfor; ?>
-        <!-- 今月セル -->
-        <?php for($i=1; checkdate($m, $i, $y); $i++): ?>
-          <?php if(getWeekNum($m, $i, $y) === '0'): ?>
-            </tr>
-            <tr>
-          <?php endif; ?>
-          <td class="the-day">
-            <a href="./index.php?y=<?= $y ?>&m=<?= $m ?>&d=<?= $i ?>"><?= aaa ?></a>
-          </td>
-        <?php endfor; ?>
-        <!-- 月末セル埋め合わせ -->
-        <?php for($j=0; $j<6-getWeekNum($m, $i-1, $y); $j++): ?>
-          <td></td>
-        <?php endfor; ?>
-      </tr>
+      <?php foreach($dateArray as $key => $date): ?>
+        <?php list($y, $m, $d) = explode('-', $date); ?>
+        <?php if(($key) % 7 == 0): ?>
+          <tr>
+        <?php endif; ?>
+        <td>
+          <a href="index.php?date=<?= $date ?>"><?= $d ?></a>
+        </td>
+        <?php if(($key) % 7 == 6): ?>
+          </tr>
+        <?php endif; ?>
+      <?php endforeach; ?>
+
     </table>
 
     <br>
 
     
     <!-- 週ごとのスケジュール -->
-    <table id="week-schedule" border="1">
+    <table id="schedule-table" border="1">
       <tr>
         <th> </th>
-        <?php $d2 = getThisSunday($m, $d, $y);  // 今週の日曜日 ?>
-        <?php for($i=0; $i<7 ;$i++, $d2++): ?>
-          <th><?= checkdate($m, $d2, $y) ? $d2."日(".getWeekName($i).")" : " " ?></th>
-        <?php endfor; ?>
+        <?php foreach($weekday as $key => $day): ?>
+          <?php list($y, $m, $d) = explode('-', $day); ?>
+          <th><?= "$m/$d(".getWeekName($key).")" ?></th>
+        <?php endforeach; ?>
       </tr>
-    </table>
 
-    <!--
-      <?php for($i=$beginHour; $i<=$endHour; $i++): ?>
-      <tr>
-        <td><?= $i ?>:00</td>
-        <?php $d = getThisSunday($m, $today, $y);  // 今週の日曜日 ?>
-        <?php for($j=0; $j<7 ;$j++): ?>
-          <td class="hour-schedule">
-            <?php
-              $datetime = $y."-".$m."-".$d." ".$i.":00";
-              $schedule = selectSchedule($userId, $datetime);
-              //cho echedule['title'];
-              foreach($schedule as $value){
-                echo $value['title'];
-                echo "<br>";
-              }
-              $d++
-            ?>
-          </td>
-        <?php endfor; ?>
-      </tr>
+    
+      <?php for($i=0; $i<=24; $i++): ?>
+        <tr>
+          <td><?= $i ?>:00</td>
+          <?php foreach($weekday as $day): ?>
+            <td class="hour-schedule">
+            </td>
+          <?php endforeach; ?>
+        </tr>
       <?php endfor; ?>
     </table>
-            -->
+            
 
     <form action="" method="post">
       <h4>新規スケジュール登録</h4>
-      <input type="date" name="date" value="2022-11-27">
+      <input type="date" name="date" value="<?= $date ?>">
       <br>
       <input id="title" type="text" name="title" placeholder="タイトルを追加">
       <br>
-      <input id="begin" type="time" name="begin" value="08:00">
+      <input id="begin" type="time" name="start">
       <span>～</span>
-      <input id="end" type="time" name="end" value="09:00">
+      <input id="end" type="time" name="end">
       <br>
       <textarea name="memo" placeholder="説明"></textarea>
       <br>
-      <button type="submit" name="submit_add">登録</button>
+      <button type="submit" name="submit_add" value="1">登録</button>
     </form>
             
   </body>

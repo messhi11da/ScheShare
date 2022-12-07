@@ -12,33 +12,15 @@
   }
   
   function createCalendar($m, $y){
-    //$date = new DateTime('now');
     $startDate = calcStartDate($m, $y);
-    
     $endDate = calcEndDate($m, $y);
- //   $diff = $date -> diff($lastDate); // date - lastdate > 0 → 1 
-   // return $diff -> invert;
-    
     while($startDate <= $endDate){
-//   for($i=0; $i<35; $i++){ // 第一週の日曜から第五週の土曜までの日付を配列化
-      $dateAry[] = $startDate -> format('Y-m-d');
+      $dateArray[] = $startDate -> format('Y-n-j');
       $startDate -> modify('+1 day');
     }
-    return  $dateAry;
-      
-    //}
-    
+    return  $dateArray;
   }
 
-  function calcEndDate($m, $y){
-    $lastDate = new DateTime("last day of $y-$m");
-    if($lastDate -> format('w') != 6){
-      $dateOffset = 6 - $lastDate -> format('w');
-      return $lastDate -> modify("+$dateOffset day");
-    }else{
-      return $lastDate;
-    }
-  }
   function calcStartDate($m, $y){
     $firstDate = new DateTime("first day of $y-$m");
     if($firstDate -> format('w') != 0){
@@ -48,13 +30,20 @@
       return $firstDate;
     }
   }
+  function calcEndDate($m, $y){
+    $lastDate = new DateTime("last day of $y-$m");
+    if($lastDate -> format('w') != 6){
+      $dateOffset = 6 - $lastDate -> format('w');
+      return $lastDate -> modify("+$dateOffset day");
+    }else{
+      return $lastDate;
+    }
+  }
 
   function getToday(){
-    $today = new DateTime('today');
-    $y = $today -> format('Y');
-    $m = $today -> format('n');
-    $d = $today -> format('j');
-    return array($y, $m, $d);
+    $dateObj = new DateTime('today');
+    $today = $dateObj -> format('Y-n-j');
+    return $today;
   }
 
   function getWeekName($dayNum){
@@ -70,34 +59,49 @@
   }
 
 
-  function getWeekNum($m, $d, $y){
-    $date_obj = new DateTime("$y-$m-$d");
-    return $date_obj -> format('w'); // 日:0 → 土:6
-  }
 
-  function getThisSunday($m, $d, $y){
-    $thisSunday = $d - getWeekNum($m, $d, $y);
-    return $thisSunday;
-  }
-/*
-  function getThisWeek($d){
-    for($i=0; $i<7; $i++){
-      $thisWeek[] = $d;
-      $d++;
+  function getWeekday($theDate, $dateArray){
+    $theDateObj = new DateTime($theDate);
+    foreach($dateArray as $key => $date){
+      if($date === $theDate){
+        $sundayKey = $key - $theDateObj -> format('w');
+      }
     }
-    return $thisWeek;
+    for($i=0; $i<7; $i++) $weekday[] = $dateArray[$sundayKey+$i];
+    return $weekday;
   }
 
-  function insertSchedule($userId, $beginTime, $endTime, $title, $memo){
+  function insertSchedule($empId, $date, $startTime, $endTime, $title, $memo){
     global $dbh;
-    $sql = "INSERT INTO schedule (user_id, begin_time, end_time, title, memo) VALUES (?, ?, ?, ?, ?)";
+    $sql = "INSERT INTO schedule (emp_id, date, start_time, end_time, title, memo) VALUES (?, ?, ?, ?, ?, ?)";
     $stmt = $dbh -> prepare($sql);
-    $stmt -> bindValue(1, $userId);
-    $stmt -> bindValue(2, $beginTime);
-    $stmt -> bindValue(3, $endTime);
-    $stmt -> bindValue(4, $title);
-    $stmt -> bindValue(5, $memo);
+    $stmt -> bindValue(1, $empId);
+    $stmt -> bindValue(2, $date);
+    $stmt -> bindValue(3, $startTime);
+    $stmt -> bindValue(4, $endTime);
+    $stmt -> bindValue(5, $title);
+    $stmt -> bindValue(6, $memo);
     $stmt -> execute();
+  }
+
+  function selectEmp($keyword){
+    $keywordArray = preg_split('/( |　)/', $keyword);
+    $count = count($keywordArray);
+    $sql = "SELECT emp_id, emp_name, dept_name FROM emp LEFT OUTER JOIN dept ON emp.dept_id = dept.dept_id WHERE ";
+    for($i=0; $i<$count; $i++){
+      $placeholder[] = "(emp_id = ? OR emp_name = ? OR dept_name = ?)";
+    }
+    $sql .= implode(' AND ', $placeholder);
+    global $dbh;
+    $stmt = $dbh -> prepare($sql);
+    foreach($keywordArray as $key => $keyword){
+      $stmt -> bindValue(3 * $key + 1, $keyword);      
+      $stmt -> bindValue(3 * $key + 2, $keyword);      
+      $stmt -> bindValue(3 * $key + 3, $keyword);      
+    }
+    $stmt -> execute();
+    $res = $stmt -> fetchAll(PDO::FETCH_ASSOC);
+    return $res;
   }
 
   function selectSchedule($userId, $datetime){
@@ -110,7 +114,7 @@
     $res = $stmt -> fetchAll(PDO::FETCH_ASSOC);
     return $res;
   }
-*/
+
   function escape($word){
     $res = htmlspecialchars($word, ENT_QUOTES);
     return $res;
