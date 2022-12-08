@@ -15,7 +15,7 @@
     $startDate = calcStartDate($m, $y);
     $endDate = calcEndDate($m, $y);
     while($startDate <= $endDate){
-      $dateArray[] = $startDate -> format('Y-n-j');
+      $dateArray[] = $startDate -> format('Y-m-d');
       $startDate -> modify('+1 day');
     }
     return  $dateArray;
@@ -42,7 +42,8 @@
 
   function getToday(){
     $dateObj = new DateTime('today');
-    $today = $dateObj -> format('Y-n-j');
+  //  $today = $dateObj -> format('Y-n-j');
+    $today = $dateObj -> format('Y-m-d');
     return $today;
   }
 
@@ -51,17 +52,11 @@
     return $week[$dayNum];    
   }
 
-  function getYearMonth($dateString){
-    $dateObj = new DateTime($dateString);
-    $y = $dateObj -> format('Y');
-    $m = $dateObj -> format('n');
-    return array($y, $m);
-  }
-
 
 
   function getWeekday($theDate, $dateArray){
     $theDateObj = new DateTime($theDate);
+    var_dump($theDate);
     foreach($dateArray as $key => $date){
       if($date === $theDate){
         $sundayKey = $key - $theDateObj -> format('w');
@@ -84,7 +79,7 @@
     $stmt -> execute();
   }
 
-  function selectEmp($keyword){
+  function searchEmp($keyword){
     $keywordArray = preg_split('/( |　)/', $keyword);
     $count = count($keywordArray);
     $sql = "SELECT emp_id, emp_name, dept_name FROM emp LEFT OUTER JOIN dept ON emp.dept_id = dept.dept_id WHERE ";
@@ -100,19 +95,17 @@
       $stmt -> bindValue(3 * $key + 3, $keyword);      
     }
     $stmt -> execute();
-    $res = $stmt -> fetchAll(PDO::FETCH_ASSOC);
-    return $res;
+    return $stmt -> fetchAll(PDO::FETCH_ASSOC);
   }
 
-  function selectSchedule($userId, $datetime){
+  function selectSchedule($userId, $date){
     global $dbh;
-    $sql = "SELECT * FROM schedule WHERE user_id = ? && begin_time = ?";
+    $sql = "SELECT * FROM schedule WHERE emp_id = ? && date = ?";
     $stmt = $dbh -> prepare($sql);
     $stmt -> bindValue(1, $userId);
-    $stmt -> bindValue(2, $datetime);
+    $stmt -> bindValue(2, $date);
     $stmt -> execute();
-    $res = $stmt -> fetchAll(PDO::FETCH_ASSOC);
-    return $res;
+    return $stmt -> fetchAll(PDO::FETCH_ASSOC);
   }
 
   function escape($word){
