@@ -98,14 +98,21 @@
     return $stmt -> fetchAll(PDO::FETCH_ASSOC);
   }
 
-  function selectSchedule($userId, $date){
+  function selectSchedule($empId, $weekday, $h){
     global $dbh;
-    $sql = "SELECT * FROM schedule WHERE emp_id = ? && date = ?";
-    $stmt = $dbh -> prepare($sql);
-    $stmt -> bindValue(1, $userId);
-    $stmt -> bindValue(2, $date);
-    $stmt -> execute();
-    return $stmt -> fetchAll(PDO::FETCH_ASSOC);
+    $flag = 0;
+    foreach($weekday as $date){
+      $sql = "SELECT * FROM schedule WHERE emp_id = ? AND date = ? AND DATE_FORMAT(start_time, '%H') = ? ORDER BY start_time ASC";
+      $stmt = $dbh -> prepare($sql);
+      $stmt -> bindValue(1, $empId);
+      $stmt -> bindValue(2, $date);
+      $stmt -> bindValue(3, substr('00'.$h, -2));
+      $stmt -> execute();
+      $res = $stmt -> fetchAll(PDO::FETCH_ASSOC);
+      if(!empty($res)) $flag = 1;
+      $weekSchedule[] = $res;
+    }
+    return $flag === 1 ? $weekSchedule : 0;
   }
 
   function escape($word){

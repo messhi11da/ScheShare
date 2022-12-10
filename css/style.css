@@ -1,1 +1,10 @@
 
+
+.schedule-content{
+  display: flex;
+}
+
+.emp-area{
+  width: 100px;
+  height: 100px;
+}

@@ -126,32 +126,46 @@
 
     
     <!-- 週ごとのスケジュール -->
-    <div class="schedule-block">
-      <div>自分</div>
+    <div class="schedule-content">
+      <div class="emp-area">自分</div>
       <table id="schedule-table" border="1">
         <tr>
-          <th> </th>
-          <?php foreach($weekday as $key => $day): ?>
-            <?php list($y, $m, $d) = explode('-', $day); ?>
+          <?php foreach($weekday as $key => $date3): ?>
+            <?php list($y, $m, $d) = explode('-', $date3); ?>
             <th><?= "$m/".(int)$d."(".getWeekName($key).")" ?></th>
           <?php endforeach; ?>
         </tr>
 
         <!-- 一週間のスケジュール（一人分） -->
         <?php 
-          foreach($weekday as $date3):
-            $mySchedule = selectSchedule($userId, $date3);
-            var_dump($mySchedule);
-        ?>    
-            
-        <?php endforeach; ?>
+          for($h=0; $h<24; $h++):
+            $weekSchedule = selectSchedule($empId, $weekday, $h);
+       //    var_dump($weekSchedule);
+       //    var_dump($h);
+       //    echo '<br>';
+            if(!empty($weekSchedule)): 
+        ?>
+              <tr>
+                <?php foreach($weekSchedule as $dateSchedule): ?>
+                  <td>
+                    <ul>
+                      <?php foreach($dateSchedule as $schedule): ?>
+                        <li>
+                          <?= substr($schedule['start_time'], 0, 5); ?>~<?= substr($schedule['end_time'], 0, 5); ?> <?= $schedule['title'] ?>
+                        </li>
+                      <?php endforeach; ?>
+                    </ul>
+                  </td>
+                <?php endforeach; ?>
+              </tr>
+            <?php endif; ?>    
+        <?php endfor; ?>
             
 
       </table>
     </div>
 
 
-            
 
     <form id="schedule-form" action="" method="post">
       <h4>新規スケジュール登録</h4>
