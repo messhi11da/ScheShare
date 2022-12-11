@@ -1,7 +1,8 @@
 <?php
   require_once(dirname(__FILE__).'/function.php');
   
-  $empId = 154;
+
+  $empId = '154';
 
   $today = getToday();
   if(isset($_GET['date'])){
@@ -12,24 +13,41 @@
     list($y, $m, $d) = explode('-', $date);   
   }
 
+  $deptList = selectDept();
+  //var_dump($deptList);
   $dateArray = createCalendar($m, $y);
-  var_dump($date);
-  echo "<br>";
-  var_dump($dateArray);
+ // var_dump($date);
+ // echo "<br>";
+ // var_dump($dateArray);
   $weekday = getWeekday($date, $dateArray);
 
   
-    
+  $selectedDeptId = '0';
+  //var_dump($selectedDeptId);
   if(isset($_POST['submit_search'])){
     $keyword = escape($_POST['keyword']);
-    if(!empty($keyword)) $searchedEmp = searchEmp($keyword);
+    $selectedDeptId = $_POST['dept_id'];
+    var_dump($selectedDeptId);
+    //  $keywordCheck = preg_replace('/( |　)/', '', $keyword);
+    //  var_dump($keyword);
+    var_dump($_POST['dept_id']);
+    $searchedEmpList = searchEmp($keyword, $selectedDeptId);
   }
+
+
+  var_dump($_POST);
+  $displayEmpList[] = selectEmp($empId);
   
-  if(isset($_POST['submit_checked'], $_POST['checkedEmp'])){ 
-    $checkedEmp = selectEmp($_POST['checkedEmp']);
+  if(isset($_POST['submit_checked'])){
+    $keyword = $_POST['keyword'];
+    $selectedDeptId = $_POST['dept_id'];
+    $searchedEmpList = searchEmp($keyword, $selectedDeptId);
+    $checkedEmpIdList = $_POST['checked_emp'];
+    foreach($checkedEmpIdList as $checkedEmpId){
+      $displayEmpList[] = selectEmp($checkedEmpId);
+    }
+    var_dump($displayEmpList);
   }
-
-
 
 
   if(isset($_POST['submit_add'])){
@@ -62,30 +80,40 @@
     <h1>ScheShare</h1>
 
     <form action="" method="post">
-      <input type="text" name="keyword" placeholder="社員を探す">
+      <select name="dept_id">
+        <option value="0">全体</option>
+        <?php foreach($deptList as $dept): ?>
+          <option value="<?= $dept['dept_id'] ?>" <?= $dept['dept_id'] ===  $selectedDeptId ? "selected" : "" ?>><?= $dept['dept_name'] ?></option>
+        <?php endforeach; ?>
+      </select>
+      <input type="text" name="keyword" value="<?= isset($keyword) ? $keyword : '' ?>" placeholder="社員を探す">
       <button type="submit" name="submit_search" value="1">検索</button>
     </form>
 
-    <?php if(isset($searchedEmp)): ?>
-      <p>検索結果: <?= count($searchedEmp); ?>件</p>
-      <?php if(count($searchedEmp) > 0): ?>
+    <?php if(isset($searchedEmpList)): ?>
+      <p>検索結果: <?= count($searchedEmpList); ?>件</p>
+      <?php if(count($searchedEmpList) > 0): ?>
         <form action="" method="post">
+          <input name="dept_id" value="<?= $selectedDeptId ?>" type="hidden">
+          <input name="keyword" value="<?= $keyword ?>" type="hidden">
           <table>
             <tr>
               <th>社員番号</th>
               <th>部署</th>
               <th>名前</th>
               <th>
-                <button type="submit" name="submit_checked" value="1">選択</button>
+                <button id="display-btn" type="submit" name="submit_checked" value="1">スケジュール表示</button>
               </th>
             </tr>
-            <?php foreach($searchedEmp as $emp): ?>
+            <?php foreach($searchedEmpList as $key => $emp): ?>
               <tr>
                 <td><?= $emp['emp_id'] ?></td>
                 <td><?= $emp['dept_name'] ?></td>
                 <td><?= $emp['emp_name'] ?></td>
                 <td>
-                  <input type="checkbox" name="checkedEmp[]" value="<?= $emp['emp_id'] ?>">
+                  <?php if($emp['emp_id'] != $empId): ?>
+                    <input type='checkbox' name="checked_emp[]" value="<?= $emp['emp_id'] ?>" <?= in_array($emp['emp_id'], $checkedEmpIdList)? 'checked' : '' ?>>
+                  <?php endif; ?>
                 </td>
               </tr>
             <?php endforeach; ?>
@@ -127,9 +155,9 @@
     
     <!-- 週ごとのスケジュール -->
     <div class="schedule-content">
-      <div class="emp-area">自分</div>
       <table id="schedule-table" border="1">
         <tr>
+          <th></th>
           <?php foreach($weekday as $key => $date3): ?>
             <?php list($y, $m, $d) = explode('-', $date3); ?>
             <th><?= "$m/".(int)$d."(".getWeekName($key).")" ?></th>
@@ -137,15 +165,99 @@
         </tr>
 
         <!-- 一週間のスケジュール（一人分） -->
+  
+        
         <?php 
-          for($h=0; $h<24; $h++):
-            $weekSchedule = selectSchedule($empId, $weekday, $h);
-       //    var_dump($weekSchedule);
-       //    var_dump($h);
-       //    echo '<br>';
-            if(!empty($weekSchedule)): 
+          foreach($displayEmpList as $displayEmp):
+            $hourMemory = 0;
+            for($hour=0; $hour<24; $hour++):
+              $weekSchedule = selectSchedule($displayEmp['emp_id'], $weekday, $hour);
+              if(!empty($weekSchedule)): // 一週間の中でスケジュールが入っている時刻リストを取得  
+                $hourDiff = $hour - $hourMemory; // 前回スケジュールがあった時刻(hour)との差
         ?>
-              <tr>
+                <tr>
+                  <?php if($hourMemory === 0): ?>
+                    <td rowspan="24">
+                      <?= $displayEmp['emp_id'] ?>
+                      <br>
+                      <?= $displayEmp['emp_name'] ?>
+                      <br>
+                      <?= $displayEmp['dept_name'] ?>
+
+                    </td>
+                  <?php endif; ?>
+
+                  <?php for($col=0; $col<7; $col++): ?>
+                    <td rowspan="<?= $hourDiff ?>"><?= $hourDiff ?></td>
+                  <?php endfor; ?>
+                </tr>
+                <?php for($row=0; $row<($hourDiff-1); $row++): ?>
+                  <tr></tr>
+                <?php endfor; ?>
+    
+
+                <tr>
+                  <?php for($col=0; $col<7; $col++): ?>
+                    <td>
+                      <ul>
+                        <?php foreach($weekSchedule[$col] as $dateSchedule): ?>
+                          <li>
+                            <?= substr($dateSchedule['start_time'], 0, 5); ?>~
+                            <?= substr($dateSchedule['end_time'], 0, 5); ?>
+                            <?= $dateSchedule['title'] ?>
+                          </li>
+                        <?php endforeach; ?>
+                      </ul>
+                    </td>
+                  <?php endfor; ?>   
+                </tr>
+              <?php $hourMemory = $hour + 1; ?>
+            <?php endif; ?>
+          <?php endfor; ?> 
+
+          <?php if($hourMemory < 24): ?>
+            <tr>
+              <?php if($hourMemory === 0): ?>
+                
+                <td rowspan="24">
+                  <?= $displayEmp['emp_id'] ?>
+                  <br>
+                  <?= $displayEmp['emp_name'] ?>
+                  <br>
+                  <?= $displayEmp['dept_name'] ?>
+                </td>
+              <?php endif; ?>
+              <?php for($col=0; $col<7; $col++): ?>
+                <td rowspan="<?= 24-$hourMemory ?>"><?= 24-$hourMemory ?></td>
+              <?php endfor; ?>
+            </tr>
+            <?php for($row=0; $row<(23-$hourMemory); $row++): ?>
+              <tr></tr>
+            <?php endfor; ?>
+          <?php endif; ?>
+        <?php endforeach; ?>
+
+
+
+
+
+
+
+<!--
+
+
+
+
+        <?php 
+          foreach($checkedEmpList as $checkedEmp):
+            for($h=0; $h<24; $h++):
+              $weekSchedule = selectSchedule($checkedEmp, $weekday, $h);
+        ?>
+            <tr>
+              <?php if($h === 0): ?>
+                <td rowspan="24"><?= $checkedEmp['emp_name'] ?></td>
+              <?php endif; ?>
+              <?php if(!empty($weekSchedule)): ?> 
                 <?php foreach($weekSchedule as $dateSchedule): ?>
                   <td>
                     <ul>
@@ -157,12 +269,56 @@
                     </ul>
                   </td>
                 <?php endforeach; ?>
-              </tr>
-            <?php endif; ?>    
-        <?php endfor; ?>
-            
-
+              <?php endif; ?>    
+            </tr>
+          <?php 
+            endfor;
+          endforeach;
+          ?>
+          -->
       </table>
+      <div>
+          <table border="1">
+            <tr>
+              <td rowspan="5">5</td>
+              <td rowspan="1">1</td>
+              <td rowspan="1">1</td>
+              <td rowspan="1">1</td>
+              <td rowspan="1">1</td>
+            </tr>
+            <tr>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+            </tr>
+
+          </table>
+      </div>
     </div>
 
 
@@ -179,15 +335,34 @@
       <br>
       <textarea name="memo" placeholder="説明"></textarea>
       <br>
+
       <button type="submit" name="submit_add" value="1">登録</button>
     </form>
             
 
 
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
     <script>
       var scheduleForm = document.getElementById('schedule-form');
       var inputStartTime = document.querySelector('.input-starttime');
       var inputEndTime = document.querySelector('.input-endtime');
+
+
+      
+      var checkEmp = document.querySelectorAll('.check_emp');
+      var displayBtn = document.getElementById('display-btn');
+      console.log(checkEmp);
+      displayBtn.addEventListener('click', function(){
+        var checkedEmpList = [];
+        for(var elem of checkEmp){
+          console.log(elem);
+          if(elem.checked) checkedEmpList.push(elem.value);
+        }
+        console.log(checkedEmpList);
+        $.get('index.php', 
+          {key: "value1"});
+      });
+
 
       scheduleForm.addEventListener('submit', function(e){
         var inputDate = this.querySelector('.input-date');

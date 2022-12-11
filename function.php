@@ -56,7 +56,7 @@
 
   function getWeekday($theDate, $dateArray){
     $theDateObj = new DateTime($theDate);
-    var_dump($theDate);
+    //var_dump($theDate);
     foreach($dateArray as $key => $date){
       if($date === $theDate){
         $sundayKey = $key - $theDateObj -> format('w');
@@ -79,22 +79,64 @@
     $stmt -> execute();
   }
 
-  function searchEmp($keyword){
-    $keywordArray = preg_split('/( |　)/', $keyword);
-    $count = count($keywordArray);
-    $sql = "SELECT emp_id, emp_name, dept_name FROM emp LEFT OUTER JOIN dept ON emp.dept_id = dept.dept_id WHERE ";
-    for($i=0; $i<$count; $i++){
-      $placeholder[] = "(emp_id = ? OR emp_name = ? OR dept_name = ?)";
-    }
-    $sql .= implode(' AND ', $placeholder);
+  function searchEmp($keyword, $deptId){
     global $dbh;
+    $sql = "SELECT emp_id, emp_name, dept_name FROM emp LEFT OUTER JOIN dept ON emp.dept_id = dept.dept_id WHERE ";
+
+    $keywordArray = preg_split('/( |　)/', $keyword);
+    //var_dump($keywordArray);
+    for($i=0; $i<count($keywordArray); $i++){
+      $placeholder[] = "(emp_id LIKE ? OR emp_name LIKE ? OR dept_name LIKE ?)";
+    }
+    $sql .= "( ".implode(' AND ', $placeholder)." )";
+
+    if(!empty($deptId)) $sql .= " AND dept.dept_id = ?"; 
+    $sql .= " ORDER BY emp_id ASC";
     $stmt = $dbh -> prepare($sql);
     foreach($keywordArray as $key => $keyword){
-      $stmt -> bindValue(3 * $key + 1, $keyword);      
-      $stmt -> bindValue(3 * $key + 2, $keyword);      
-      $stmt -> bindValue(3 * $key + 3, $keyword);      
+      $stmt -> bindValue(3 * $key + 1, "%$keyword%");      
+      $stmt -> bindValue(3 * $key + 2, "%$keyword%");      
+      $stmt -> bindValue(3 * $key + 3, "%$keyword%");      
     }
+    
+    if(!empty($deptId)) $stmt -> bindValue(3 * $key + 4, $deptId);
     $stmt -> execute();
+    return $stmt -> fetchAll(PDO::FETCH_ASSOC);
+  }
+
+  /*
+  function selectEmp($empIdList){
+    global $dbh;
+    $sql = "SELECT emp_id, emp_name, dept_name FROM emp LEFT OUTER JOIN dept ON emp.dept_id = dept.dept_id WHERE ";
+    for($i=0; $i<count($empIdList); $i++){
+      $placeholder[] = "emp.emp_id = ?";
+    }
+    var_dump($placeholder);
+    $sql .= implode(" OR ", $placeholder)." ORDER BY emp_id ASC";
+    $stmt = $dbh -> prepare($sql);
+    foreach($empIdList as $key => $empId){
+      $stmt -> bindValue($key + 1, $empId);
+    }
+    var_dump($stmt);
+    $stmt -> execute();
+
+    return $stmt -> fetchAll(PDO::FETCH_ASSOC);
+  }
+  */
+
+  function selectEmp($empId){
+    global $dbh;
+    $sql = "SELECT emp_id, emp_name, dept_name FROM emp LEFT OUTER JOIN dept ON emp.dept_id = dept.dept_id WHERE emp.emp_id = ?";
+    $stmt = $dbh -> prepare($sql);
+    $stmt -> bindValue(1, $empId);
+    $stmt -> execute();
+    return $stmt -> fetch(PDO::FETCH_ASSOC);
+  }
+
+  function selectDept(){
+    global $dbh;
+    $sql = "SELECT * from dept";
+    $stmt = $dbh -> query($sql);
     return $stmt -> fetchAll(PDO::FETCH_ASSOC);
   }
 
@@ -114,6 +156,9 @@
     }
     return $flag === 1 ? $weekSchedule : 0;
   }
+
+
+
 
   function escape($word){
     $res = htmlspecialchars($word, ENT_QUOTES);
