@@ -66,9 +66,15 @@
     return $weekday;
   }
 
-  function insertSchedule($empId, $date, $startTime, $endTime, $title, $memo){
+
+//  function changeDateFormat()
+
+
+  function insertSchedule($empId, $date, $startTime, $endTime, $title, $memo, $attendeesIdList){
     global $dbh;
-    $sql = "INSERT INTO schedule (emp_id, date, start_time, end_time, title, memo) VALUES (?, ?, ?, ?, ?, ?)";
+    var_dump(implode('X', $attendeesIdList));
+    //exit;
+    $sql = "INSERT INTO schedule (emp_id, date, start_time, end_time, title, memo, attendees_id) VALUES (?, ?, ?, ?, ?, ?, ?)";
     $stmt = $dbh -> prepare($sql);
     $stmt -> bindValue(1, $empId);
     $stmt -> bindValue(2, $date);
@@ -76,7 +82,13 @@
     $stmt -> bindValue(4, $endTime);
     $stmt -> bindValue(5, $title);
     $stmt -> bindValue(6, $memo);
+    $stmt -> bindValue(7, implode('X', $attendeesIdList));
     $stmt -> execute();
+    var_dump($stmt);
+  //  exit;
+    header("Location:http://localhost/ScheShare/index.php");
+    exit;
+
   }
 
   function searchEmp($keyword, $deptId){
@@ -104,25 +116,6 @@
     return $stmt -> fetchAll(PDO::FETCH_ASSOC);
   }
 
-  /*
-  function selectEmp($empIdList){
-    global $dbh;
-    $sql = "SELECT emp_id, emp_name, dept_name FROM emp LEFT OUTER JOIN dept ON emp.dept_id = dept.dept_id WHERE ";
-    for($i=0; $i<count($empIdList); $i++){
-      $placeholder[] = "emp.emp_id = ?";
-    }
-    var_dump($placeholder);
-    $sql .= implode(" OR ", $placeholder)." ORDER BY emp_id ASC";
-    $stmt = $dbh -> prepare($sql);
-    foreach($empIdList as $key => $empId){
-      $stmt -> bindValue($key + 1, $empId);
-    }
-    var_dump($stmt);
-    $stmt -> execute();
-
-    return $stmt -> fetchAll(PDO::FETCH_ASSOC);
-  }
-  */
 
   function selectEmp($empId){
     global $dbh;
@@ -133,6 +126,24 @@
     return $stmt -> fetch(PDO::FETCH_ASSOC);
   }
 
+  function selectAllEmp($empId){
+    global $dbh;
+    $sql = "SELECT emp_id, emp_name, dept_name FROM emp LEFT OUTER JOIN dept ON emp.dept_id = dept.dept_id WHERE emp.emp_id != ?";
+    $stmt = $dbh -> prepare($sql);
+    $stmt -> bindValue(1, $empId);
+    $stmt -> execute();
+    return $stmt -> fetchAll(PDO::FETCH_ASSOC);
+  }
+/*  
+  function selectAllEmp($empId){
+    global $dbh;
+    $sql = "SELECT emp_id, emp_name, dept_name FROM emp LEFT OUTER JOIN dept ON emp.dept_id = dept.dept_id WHERE emp.emp_id NOT IN (?)";
+    $stmt = $dbh -> prepare($sql);
+    $stmt -> bindValue(1, $empId);
+    $stmt -> execute();
+    return $stmt -> fetchAll(PDO::FETCH_ASSOC);
+  }
+  */
   function selectDept(){
     global $dbh;
     $sql = "SELECT * from dept";
@@ -140,21 +151,34 @@
     return $stmt -> fetchAll(PDO::FETCH_ASSOC);
   }
 
-  function selectSchedule($empId, $weekday, $h){
+  function selectSchedule($empId, $weekday, $startTime){
     global $dbh;
     $flag = 0;
+    var_dump($startTime);
+  
     foreach($weekday as $date){
-      $sql = "SELECT * FROM schedule WHERE emp_id = ? AND date = ? AND DATE_FORMAT(start_time, '%H') = ? ORDER BY start_time ASC";
+      $sql = "SELECT * FROM schedule WHERE (emp_id = ? OR attendees_id LIKE ?) AND date = ? AND DATE_FORMAT(start_time, '%H') = ? ORDER BY start_time ASC";
       $stmt = $dbh -> prepare($sql);
       $stmt -> bindValue(1, $empId);
-      $stmt -> bindValue(2, $date);
-      $stmt -> bindValue(3, substr('00'.$h, -2));
+      $stmt -> bindValue(2, '%X'.$empId);
+      $stmt -> bindValue(3, $date);
+      $stmt -> bindValue(4, substr('00'.$startTime, -2));
       $stmt -> execute();
       $res = $stmt -> fetchAll(PDO::FETCH_ASSOC);
       if(!empty($res)) $flag = 1;
       $weekSchedule[] = $res;
     }
     return $flag === 1 ? $weekSchedule : 0;
+  }
+
+  function fetchAttendees($attendeesId){
+    $attendeesIdList = explode('X', $attendeesId);
+  //  var_dump($attendeesIdList);
+    foreach($attendeesIdList as $attendeeId){
+      $attendee = selectEmp($attendeeId);
+      $attendeeName[] = $attendee['emp_name'];
+    }
+    return implode(", ", $attendeeName);
   }
 
 

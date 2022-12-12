@@ -1,10 +1,46 @@
 
 
-.schedule-content{
+
+ul{
+  padding-left: 0;
+}
+li{
+  list-style: none;
+}
+
+
+
+.schedule-info {
+  background-color: white;
+  border: 2px solid black;
+  border-radius: 10px;
+  padding: 0 20px;
+}
+.info-header{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.schedule-info .schedule-datetime{
+  font-size: 80%;
+}
+
+
+
+
+#schedule-form {
+  display: none;
+  background-color: white;
+  border: 2px solid black;
+  border-radius: 10px;
+  padding: 0 20px;
+}
+
+.form-wrapper{
   display: flex;
 }
 
-.emp-area{
-  width: 100px;
-  height: 100px;
+.emp-list ul{
+  height: 200px;
+  overflow: scroll;
 }
