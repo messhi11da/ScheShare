@@ -49,19 +49,29 @@ if (isset($_POST['submit_checked'])) {
   foreach ($checkedEmpIdList as $checkedEmpId) {
     $displayEmpList[] = selectEmp($checkedEmpId);
   }
-  //var_dump($displayEmpList);
+  var_dump($displayEmpList);
+  //exit;
 }
 
 
 
 
-
+// 新規スケジュール登録処理
 if (isset($_POST['submit_add'])) {
   var_dump($_POST);
 
   $title = escape($_POST['title']);
   $memo = escape($_POST['memo']);
+  
   insertSchedule($empId, $_POST['date'], $_POST['start'], $_POST['end'], $title, $memo, $_POST['attendees']);
+}
+
+// スケジュール編集処理
+if(isset($_POST['submit_edit'])){
+  var_dump($_POST);
+  $title = escape($_POST['title']);
+  $memo = escape($_POST['memo']);
+  updateSchedule($empId, $_POST['date'], $_POST['start'], $_POST['end'], $title, $memo, $_POST['attendees'], $_POST['schedule_id']);
 }
 
 
@@ -159,6 +169,7 @@ if (isset($_POST['submit_add'])) {
 
 <!-- 週ごとのスケジュール -->
 <div id="schedule-wrapper">
+  <input id="close-check" type="hidden" value="valid">
   <table id="schedule-table" border="1">
     <tr>
       <th></th>
@@ -175,7 +186,9 @@ if (isset($_POST['submit_add'])) {
     foreach ($displayEmpList as $displayEmp) :
       $endTime = 0;
       for ($startTime = 0; $startTime < 24; $startTime++) :
+        var_dump($displayEmp['emp_name']);
         $weekSchedule = selectSchedule($displayEmp['emp_id'], $weekday, $startTime);
+        // var_dump($weekSchedule);
         if (!empty($weekSchedule)) : // 一週間の中でスケジュールが入っている時刻リストを取得  
           $freeTime = $startTime - $endTime; // 前回スケジュールがあった時刻(hour)との差
           var_dump(($freeTime));
@@ -190,54 +203,92 @@ if (isset($_POST['submit_add'])) {
                 <?= $displayEmp['dept_name'] ?>
               </td>
             <?php endif; ?>
-            
-            <?php if($freeTime > 0): ?>
+
+            <?php if ($freeTime > 0) : ?>
 
               <?php for ($col = 0; $col < 7; $col++) : ?>
                 <td rowspan="<?= $freeTime ?>"><?= $freeTime ?></td>
               <?php endfor; ?>
           </tr>
-            <?php for ($row = 0; $row < ($freeTime - 1); $row++) : ?>
-              <tr></tr>
-            <?php endfor; ?>
+          <?php for ($row = 0; $row < ($freeTime - 1); $row++) : ?>
+            <tr></tr>
+          <?php endfor; ?>
           <tr>
           <?php endif; ?>
 
-            <?php for ($col = 0; $col < 7; $col++) : ?>
-              <td>
-                <ul>
-                  <?php foreach ($weekSchedule[$col] as $dateSchedule) : ?>
-                    <li class="schedule-li">
+          <?php for ($day = 0; $day < 7; $day++) : ?>
+            <td>
+              <ul>
+                <?php foreach ($weekSchedule[$day] as $key => $dateSchedule) : ?>
+                  <li class="schedule-item">
+                    <?= substr($dateSchedule['start_time'], 0, 5); ?>~
+                    <?= substr($dateSchedule['end_time'], 0, 5); ?>
+                    <?= $dateSchedule['title'] ?>
+                    <?= $startTime ?>
+                  </li>
+
+                  <!-- スケジュール詳細画面 -->
+                  <div class="schedule-desc" style="display: none;">
+                    <div class="schedule-header">
+                      <h4>スケジュール詳細</h4>
+                      <button class="edit-btn" type="button">編集</button>
+                      <button class="close-btn" type="button">×</button>
+                    </div>
+                    <p class="schedule-datetime">
+                      <?php list($y, $m, $d) = explode('-', $dateSchedule['date']); ?>
+                      <?= $y ?>/<?= $m ?>/<?= $d ?>/(<?= getWeekName($col); ?>)
                       <?= substr($dateSchedule['start_time'], 0, 5); ?>~
                       <?= substr($dateSchedule['end_time'], 0, 5); ?>
-                      <?= $dateSchedule['title'] ?>
-                    </li>
+                    </p>
+                    <p><?= $dateSchedule['title'] ?></p>
+                    <p>
+                      説明：<br>
+                      <?= $dateSchedule['memo'] ?>
+                    </p>
+                    <p>
+                      参加者：<?= fetchAttendees($dateSchedule['attendees_id']); ?>
+                    </p>
+                  </div>
 
-                    <div class="schedule-info" style="display: none;">
-                      <div class="info-header">
-                        <h4>スケジュール詳細</h4>
-                        <button id="edit-btn" type="button">編集</button>
-                      </div>
-                      <p class="schedule-datetime">
-                        <?php list($y, $m, $d) = explode('-', $dateSchedule['date']); ?>
-                        <?= $y ?>/<?= $m ?>/<?= $d ?>/(<?= getWeekName($col); ?>)
-                        <?= substr($dateSchedule['start_time'], 0, 5); ?>~
-                        <?= substr($dateSchedule['end_time'], 0, 5); ?>
-                      </p>
-                      <p><?= $dateSchedule['title'] ?></p>
-                      <p>
-                        説明：<br>
-                        <?= $dateSchedule['memo'] ?>
-                      </p>
-                      <p>
-                        参加者：<?= fetchAttendees($dateSchedule['attendees_id']); ?>
-                      </p>
+                  <!-- スケジュール編集画面 -->
+                  <form class="schedule-form edit-form" action="" method="post" style="display: none;">
+                    <div class="schedule-header">
+                      <h4>スケジュール編集</h4>
+                      <button class="close-btn" type="button">×</button>
                     </div>
 
-                  <?php endforeach; ?>
-                </ul>
-              </td>
-            <?php endfor; ?>
+                    <input class="input-title" id="title" type="text" name="title" value="<?= $dateSchedule['title'] ?>" placeholder="タイトルを追加">
+                    <br>
+                    日時：
+                    <input class="input-date" type="date" name="date" value="<?= $dateSchedule['date'] ?>">
+                    <br>
+                    時刻：
+                    <input class="input-starttime" id="begin" type="time" name="start" value="<?= $dateSchedule['start_time'] ?>">
+                    <span>～</span>
+                    <input class="input-endtime" id="end" type="time" name="end" value="<?= $dateSchedule['end_time'] ?>">
+                    <br>
+                    参加者：
+                    <?php foreach ($displayEmpList as $displayEmp2) : ?>
+                      <?= $displayEmp2['emp_name'] ?>
+                      <input type=<?= $displayEmp2['emp_id'] === $empId ? 'hidden' : 'checkbox' ?> name="attendees[]" value="<?= $displayEmp2['emp_id'] ?>" <?= strpos($dateSchedule['attendees_id'], 'X' . $displayEmp2['emp_id']) ? 'checked' : '' ?>>
+                    <?php endforeach; ?>
+                    <br>
+                    <textarea name="memo" placeholder="説明"></textarea>
+                    <br>
+                    <input type="hidden" name="schedule_id" value="<?= $dateSchedule['id'] ?>">
+                    <button type="submit" name="submit_edit" value="1">更新</button>
+                  </form>
+
+
+
+
+
+
+
+                <?php endforeach; ?>
+              </ul>
+            </td>
+          <?php endfor; ?>
           </tr>
           <?php $endTime = $startTime + 1; ?>
         <?php endif; ?>
@@ -273,51 +324,54 @@ if (isset($_POST['submit_add'])) {
 
 <!-- スケジュールの新規追加・編集フォーム  -->
 
-<form id="schedule-form" action="" method="post" style="display: none;">
+<form id="add-form" class="schedule-form" action="" method="post" style="display: none;">
   <h4>新規スケジュール登録</h4>
 
-  <div class="form-wrapper">
-    <div class="left-form">
-      <input class="input-title" id="title" type="text" name="title" placeholder="タイトルを追加">
-      <br>
-      <label for="date">日時：</label>
-      <input id="date" class="input-date" type="date" name="date" value="<?= $date ?>">
-      <br>
-      <label for="time">時刻：</label>
-      <input id="time" class="input-starttime" id="begin" type="time" name="start" value="09:00">
-      <span>～</span>
-      <input class="input-endtime" id="end" type="time" name="end">
-      <br>
-      <label for="attendees">参加者：</label>
-      <span id="attendees-area">自分</span>
-      <br>
-      <textarea name="memo" placeholder="説明"></textarea>
-      <br>
-    </div>
+  <input class="input-title" id="title" type="text" name="title" placeholder="タイトルを追加">
+  <br>
+  日時：
+  <input class="input-date" type="date" name="date" value="<?= $date ?>">
+  <br>
+  時刻：
+  <input class="input-starttime" id="begin" type="time" name="start" value="09:00">
+  <span>～</span>
+  <input class="input-endtime" id="end" type="time" name="end">
+  <br>
+  参加者：
+  <?php foreach ($displayEmpList as $displayEmp) : ?>
+    <?= $displayEmp['emp_name'] ?>
+    <input type=<?= $displayEmp['emp_id'] === $empId ? 'hidden' : 'checkbox' ?> name="attendees[]" value="<?= $displayEmp['emp_id'] ?>">
+  <?php endforeach; ?>
+  <br>
+  <textarea name="memo" placeholder="説明"></textarea>
+  <br>
 
+  <!--
     <div class="emp-list">
       <input type="text" placeholder="名前">
-      <input type='hidden' name="attendees[]" value="<?= $empId ?>" >
+      <input type='hidden' name="attendees[]" value="<?= $empId ?>">
       <ul>
         <?php foreach ($empList as $emp) : ?>
           <li>
             <?= $emp['emp_id'] ?>
             <?= $emp['dept_name'] ?>
             <?= $emp['emp_name'] ?>
-            <input class="checkbox-emp" data-name="<?= $emp['emp_name'] ?>" type='checkbox' name="attendees[]" value="<?= $emp['emp_id'] ?>" >
+            <input class="checkbox-emp" data-name="<?= $emp['emp_name'] ?>" type='checkbox' name="attendees[]" value="<?= $emp['emp_id'] ?>">
           </li>
         <?php endforeach; ?>
       </ul>
       <button id="add-attendees-btn" type="button">追加</button>
     </div>
   </div>
+        -->
+
 
   <button type="submit" name="submit_add" value="1">登録</button>
 </form>
 
 
 
-<form id="edit-form" class="schedule-info" action="" method="post" style="display: none;">
+<form class="schedule-info" action="" method="post" style="display: none;">
   <div class="info-header">
     <h4>スケジュール詳細(編集中)</h4>
     <button class="delete-btn" type="button">削除</button>
@@ -335,6 +389,9 @@ if (isset($_POST['submit_add'])) {
   </p>
   <p>参加者：</p>
 </form>
+
+
+
 
 
 

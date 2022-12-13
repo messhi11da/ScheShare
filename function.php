@@ -88,8 +88,29 @@
   //  exit;
     header("Location:http://localhost/ScheShare/index.php");
     exit;
-
   }
+
+  function updateSchedule($empId, $date, $startTime, $endTime, $title, $memo, $attendeesIdList, $scheduleId){
+    global $dbh;
+    var_dump($scheduleId);
+   // exit;
+    $sql = "UPDATE schedule SET emp_id = ?, date = ?, start_time = ?, end_time = ?, title = ?, memo = ?, attendees_id = ? WHERE id = ?";
+    $stmt = $dbh -> prepare($sql);
+    $stmt -> bindValue(1, $empId);
+    $stmt -> bindValue(2, $date);
+    $stmt -> bindValue(3, $startTime);
+    $stmt -> bindValue(4, $endTime);
+    $stmt -> bindValue(5, $title);
+    $stmt -> bindValue(6, $memo);
+    $stmt -> bindValue(7, implode('X', $attendeesIdList));
+    $stmt -> bindValue(8, $scheduleId);
+    var_dump($stmt);
+   // exit;
+    $stmt -> execute();
+    header("Location:http://localhost/ScheShare/index.php");
+  //  exit;
+  }
+
 
   function searchEmp($keyword, $deptId){
     global $dbh;

@@ -10,13 +10,13 @@ li{
 
 
 
-.schedule-info {
+.schedule-desc {
   background-color: white;
   border: 2px solid black;
   border-radius: 10px;
   padding: 0 20px;
 }
-.info-header{
+.schedule-header{
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -28,8 +28,8 @@ li{
 
 
 
-#schedule-form {
-  display: none;
+.schedule-form {
+  
   background-color: white;
   border: 2px solid black;
   border-radius: 10px;
