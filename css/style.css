@@ -4,9 +4,7 @@
 ul{
   padding-left: 0;
 }
-li{
-  list-style: none;
-}
+
 
 
 #top-wrapper{
@@ -60,15 +58,25 @@ header{
   font-size: 80%;
 }
 
+
+
+.emp-list ul{
+  height: 200px;
+  overflow: auto;
+}
+
+/* フォーム画面 */
 .schedule-form {
+  display: flex;
   background-color: white;
   border: 2px solid black;
   border-radius: 10px;
   padding: 0 20px;
 }
-
-
-.emp-list ul{
-  height: 200px;
-  overflow: scroll;
+.form-header{
+  display: flex;
+}
+.form-wrapper{
+  display: flex;
+  align-items: start;
 }

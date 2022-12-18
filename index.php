@@ -27,7 +27,7 @@ $week = getWeek($date, $dateArray); // 指定した日付を含む一週間を�
 $selectedDeptId = '0';
 
 $empList = selectAllEmp();
-$jsonEmpList = json_encode($empList);
+$empDataList = json_encode($empList);
 
 //var_dump($empList);
 
@@ -49,12 +49,7 @@ $displayEmpList[] = $user;
 
 if (isset($_POST['submit_display'])) {
   // var_dump($_POST);
-  /*
-//  $keyword = $_POST['keyword'];
-  $selectedDeptId = $_POST['dept_id'];
- // $searchedEmpList = searchEmp($keyword, $selectedDeptId);
-  $searchedEmpList = $_POST['searched_emp'];
-*/
+
   foreach ($_POST['checked_emp'] as $checkedEmpId) {
     $checkedEmp = selectEmp($checkedEmpId);
     $displayEmpList[] = $checkedEmp;
@@ -71,28 +66,40 @@ if (isset($_POST['submit_display'])) {
 // 新規スケジュール登録処理
 if (isset($_POST['submit_add'])) {
   var_dump($_POST);
-
+  //exit;
   $title = escape($_POST['title']);
   $memo = escape($_POST['memo']);
-
-  insertSchedule($userId, $_POST['date'], $_POST['start'], $_POST['end'], $title, $memo, $_POST['checked_emp']);
+  $checkedEmp = isset($_POST['checked_emp']) ? $_POST['checked_emp'] : 0;
+  var_dump($checkedEmp);
+  //exit;
+  insertSchedule($userId, $_POST['date'], $_POST['start'], $_POST['end'], $title, $memo, $checkedEmp);
+  header("Location:http://localhost/ScheShare/index.php?date=" . $date);
+  exit;
 }
 
 // スケジュール編集処理
 if (isset($_POST['submit_update'])) {
   var_dump($_POST);
-  // exit;
+  //exit;
   $title = escape($_POST['title']);
   $memo = escape($_POST['memo']);
-  updateSchedule($userId, $_POST['date'], $_POST['start'], $_POST['end'], $title, $memo, $_POST['attendees'], $_POST['schedule_id']);
+  $checkedEmp = isset($_POST['checked_emp']) ? $_POST['checked_emp'] : 0;
+  updateSchedule($userId, $_POST['date'], $_POST['start'], $_POST['end'], $title, $memo, $checkedEmp, $_POST['schedule_id']);
+  header("Location:http://localhost/ScheShare/index.php?date=" . $date);
+  exit;
 }
 
 // スケジュール削除
 if (isset($_POST['submit_delete'])) {
   var_dump($_POST);
-  //exit;
+  // exit;
   deleteSchedule($_POST['schedule_id']);
+  header("Location:http://localhost/ScheShare/index.php?date=" . $date);
+  exit;
 }
+
+var_dump($_POST);
+//exit;
 
 
 
@@ -124,39 +131,37 @@ if (isset($_POST['submit_delete'])) {
   <div id="top-wrapper">
 
 
-      <form id="search-area" action="" method="post">
-        <select class="dept-select">
-          <option class="dept-option" value="0">全部署</option>
-          <?php foreach ($deptList as $dept) : ?>
-            <option class="dept-option" value="<?= $dept['dept_id'] ?>"><?= $dept['dept_name'] ?></option>
+    <form id="search-area" action="" method="post">
+      <select class="select-dept">
+        <option class="dept-option" value="0">全部署</option>
+        <?php foreach ($deptList as $dept) : ?>
+          <option class="dept-option" value="<?= $dept['dept_id'] ?>"><?= $dept['dept_name'] ?></option>
+        <?php endforeach; ?>
+      </select>
+      <input class="input-keyword" type="text">
+
+
+      <div class="emp-list" style="display: none;">
+        <ul>
+          <?php foreach ($empList as $emp) : ?>
+            <li class="emp-item id-<?= $emp['emp_id'] ?>" style="display:none;">
+              <label>
+                <?= $emp['emp_id'] ?>/
+                <?= $emp['dept_name'] ?>/
+                <?= $emp['emp_name'] ?>
+
+                <input class="input-check" type="checkbox" name="checked_emp[]" value="<?= $emp['emp_id'] ?>" <?= in_array($emp['emp_name'], $_SESSION['display_emp']) ? "checked" : "" ?>>
+
+
+              </label>
+            </li>
+
           <?php endforeach; ?>
-        </select>
-        <input class="input-keyword" type="text">
+        </ul>
 
-
-        <div class="emp-list" style="display: none;">
-          <table>
-            <tr>
-              <th>社員番号</th>
-              <th>部署</th>
-              <th>名前</th>
-            </tr>
-            <?php foreach ($empList as $emp) : ?>
-              <tr class="emp-item id-<?= $emp['emp_id'] ?>" style="display:none;">
-                <td><?= $emp['emp_id'] ?></td>
-                <td><?= $emp['dept_name'] ?></td>
-                <td><?= $emp['emp_name'] ?></td>
-                <td>
-                  <input type="checkbox" name="checked_emp[]" value="<?= $emp['emp_id'] ?>" <?= in_array($emp['emp_name'], $_SESSION['display_emp']) ? "checked" : "" ?>>
-                </td>
-              </tr>
-
-            <?php endforeach; ?>
-          </table>
-          
-        </div>
-        <button type="submit" name="submit_display" value="1">スケジュールを表示</button>
-      </form>
+      </div>
+      <button type="submit" name="submit_display" value="1">スケジュールを表示</button>
+    </form>
 
 
 
@@ -226,7 +231,7 @@ if (isset($_POST['submit_delete'])) {
 
               <?php foreach ($week as $key => $date3) : ?>
                 <?php list($y, $m, $d) = explode('-', $date3); ?>
-                <th ><?= "$m/" . (int)$d . "(" . getWeekName($key) . ")" ?></th>
+                <th><?= "$m/" . (int)$d . "(" . getWeekName($key) . ")" ?></th>
               <?php endforeach; ?>
 
             </tr>
@@ -264,7 +269,7 @@ if (isset($_POST['submit_delete'])) {
                           <?php $json[] = $schedule;
                           ?>
 
-                          <li class="schedule-item">
+                          <li class="schedule-item" style="list-style: none;">
                             <?= $schedule['start_time'] ?>~
                             <?= $schedule['end_time'] ?>
                             <?= $schedule['title'] ?>
@@ -290,11 +295,23 @@ if (isset($_POST['submit_delete'])) {
                               説明：<br>
                               <?= $schedule['memo'] ?>
                             </p>
-                            <p>
-                              参加者：
-                              <?= $user['emp_name'] ?>
-                              <?= fetchAttendees($schedule['attendees_id']); ?>
-                            </p>
+                            参加者：
+                            <ul>
+                              <li>
+                                <?= $user['emp_name'] . "(" . $user['emp_id'] . ")" ?>
+                              </li>
+                              <?php if (!empty($schedule['attendees_id'])) :
+                             
+                                $attendees = fetchAttendees($schedule['attendees_id']);
+                                foreach ($attendees as $attendee) :
+                              ?>
+                                  <li>
+                                    <?= $attendee["emp_name"] . "(" . $attendee['emp_id'] . ")" ?>
+                                  </li>
+
+                                <?php endforeach; ?>
+                              <?php endif; ?>
+                            </ul>
                           </div>
 
 
@@ -388,10 +405,14 @@ if (isset($_POST['submit_delete'])) {
   <!-- スケジュールの新規追加・編集フォーム  -->
 
   <form id="add-form" class="schedule-form" action="" method="post" style="display: none;">
-    <div class="form-wrapper" style="display:flex;">
+    <div class="form-wrapper">
       <div class="main-form">
-        <h4 class="form-title">新規スケジュール登録</h4>
-        <button class="close-btn" type="button">×</button>
+        <div class="form-header">
+          <h4 class="form-title">新規スケジュール登録</h4>
+
+          <button class="delete-btn" type="submit" name="submit_delete" value="1" style="display:none;">削除</button>
+          <button class="close-btn" type="button">×</button>
+        </div>
         <input class="input-title" id="title" type="text" name="title" placeholder="タイトルを追加">
         <br>
         日時：
@@ -403,10 +424,10 @@ if (isset($_POST['submit_delete'])) {
         <input class="input-endtime" id="end" type="time" name="end">
         <br>
         参加者：
-        <?= $user['emp_name'] ?>
-        <?php if (isset($schedule['attendees_id'])) : ?>
-          <?= fetchAttendees($schedule['attendees_id']); ?>
-        <?php endif; ?>
+        <ul class="attendees-list">
+          <li class="attendees-item"><?= $user['emp_name'] . "(" . $user['emp_id'] . ")" ?></li>
+        </ul>
+
         <br>
         <textarea class="input-memo" name="memo" placeholder="説明"></textarea>
         <br>
@@ -421,7 +442,7 @@ if (isset($_POST['submit_delete'])) {
 
         <div>
 
-          <select class="dept-select">
+          <select class="select-dept">
             <option class="dept-option" value="0">全部署</option>
             <?php foreach ($deptList as $dept) : ?>
               <option class="dept-option" value="<?= $dept['dept_id'] ?>"><?= $dept['dept_name'] ?></option>
@@ -430,7 +451,7 @@ if (isset($_POST['submit_delete'])) {
           <input class="input-keyword" type="text">
 
 
-          <div style="display: none;">
+          <div class="emp-list">
             <ul>
               <?php foreach ($empList as $emp) : ?>
                 <li class="emp-item id-<?= $emp['emp_id'] ?>" style="display:none;">
@@ -438,12 +459,12 @@ if (isset($_POST['submit_delete'])) {
                     <?= $emp['emp_id'] ?>/
                     <?= $emp['dept_name'] ?>/
                     <?= $emp['emp_name'] ?>
-                    <input type="checkbox" name="checked_emp[]" value="<?= $emp['emp_id'] ?>">
+                    <input class="input-attend-check" type="checkbox" name="checked_emp[]" data-name="<?= $emp['emp_name'] ?>" value="<?= $emp['emp_id'] ?>" <?= $emp['emp_id'] === $userId ? "checked disabled" : "" ?>>
                   </label>
                 </li>
               <?php endforeach; ?>
             </ul>
-            <button class="attendees-btn" type="button">招集</button>
+            <button class="add-attendees-btn" type="button">招集</button>
           </div>
 
         </div>
@@ -451,6 +472,7 @@ if (isset($_POST['submit_delete'])) {
       </div>
     </div>
   </form>
+
 
 </body>
 
@@ -471,111 +493,126 @@ if (isset($_POST['submit_delete'])) {
 
 
 
-  var addAttendeesBtn = document.getElementById('add-attendees-btn');
-  var checkEmpList = document.querySelectorAll('.checkbox-emp');
-  var attendeesArea = document.getElementById('attendees-area');
+  // var addAttendeesBtn = document.getElementById('add-attendees-btn');
+  //  var checkEmpList = document.querySelectorAll('.checkbox-emp');
+  //var attendeesArea = document.getElementById('attendees-area');
 
-  console.log(attendeesArea);
+
 
 
   var addForm = document.getElementById('add-form');
   var addCloseBtn = addForm.querySelector('.close-btn');
 
 
+  var empDataList = <?= $empDataList ?>;
+  var scheduleDataList = <?= $scheduleDataList ?>;
+
+  // エンターキーでのフォーム送信を無効
+  function noEnter(event) {
+    if (event.keyCode === 13) {
+      console.log('yy');
+      event.preventDefault();
+    }
+  }
+  // 入力ワードで絞り込み（社員番号、部署名、名前）
+  function sortInput(event) {
+    var empList = this.parentElement.querySelector('.emp-list');
+    var selectDept = this.parentElement.querySelector('.select-dept');
+    console.log(this.value);
+    console.log(empList);
+
+
+
+    empList.style.display = "none";
+    if (this.value != "") {
+      for (var empData of empDataList) {
+        var empItem = empList.querySelector(".id-" + empData['emp_id']);
+        var inputCheckEmp = empItem.querySelector(".input-check");
+        console.log(inputCheckEmp);
+
+        empItem.style.display = "none";
+
+        if (empData['emp_id'].indexOf(this.value) != -1 ||
+          empData['emp_name'].indexOf(this.value) != -1 ||
+          empData['dept_name'].indexOf(this.value) != -1) {
+          empList.style.display = "block";
+          empItem.style.display = "block";
+          console.log(empList);
+          console.log('yes!!');
+        }
+        if (selectDept.value > 0 && selectDept.value != empData['dept_id']) {
+
+          empItem.style.display = "none";
+        }
+      }
+    }
+
+
+
+  }
+  // 部署名の選択肢で絞り込み
+  function sortSelect(event) {
+    for (var empData of empDataList) {
+      var empList = this.parentElement.querySelector('.emp-list');
+      var empItem = empList.querySelector(".id-" + empData['emp_id']);
+      console.log(empList);
+      if (this.value > 0 && this.value != empData['dept_id']) {
+        console.log(empData['dept_id']);
+        empItem.style.display = "none";
+      }
+    }
+
+  }
+
+  // チェックした社員を参加者一覧に表示する
+  function addAttendees(attendeesList, inputCheckList) {
+    while (attendeesList.firstChild) {
+      attendeesList.removeChild(attendeesList.firstChild);
+    }
+    for (var inputCheck of inputCheckList) {
+      if (inputCheck.checked) {
+        var li = document.createElement("li");
+        li.textContent = inputCheck.dataset.name + "(" + inputCheck.value + ")";
+        attendeesList.appendChild(li);
+      }
+    }
+  }
+
   // 絞り込み検索
 
-  var empList = <?= $jsonEmpList ?>;
+
   var inputKeywordList = document.querySelectorAll('.input-keyword');
+  console.log(inputKeywordList);
   for (var inputKeyword of inputKeywordList) {
-
-    //  console.log(deptSelect);
-    // console.log(empTable);
-    inputKeyword.addEventListener('input', function() {
-      var empTable = this.nextElementSibling;
-      var deptSelect = this.previousElementSibling;
-      console.log(this.value);
-      empTable.style.display = "none";
-      if (this.value != "") {
-        for (var emp of empList) {
-          var empItem = empTable.querySelector(".id-" + emp['emp_id']);
-          empItem.style.display = "none";
-          if (emp['emp_id'].indexOf(this.value) != -1 ||
-            emp['emp_name'].indexOf(this.value) != -1 ||
-            emp['dept_name'].indexOf(this.value) != -1) {
-            empTable.style.display = "block";
-            empItem.style.display = "table-row";
-            console.log(empTable);
-            console.log('yes!!');
-          }
-          if (deptSelect.value > 0 && deptSelect.value != emp['dept_id']) {
-            console.log(emp['dept_id']);
-            empItem.style.display = "none";
-          }
-
-        }
-
-      }
-    });
-    // エンターキーでのフォーム送信を無効
-    inputKeyword.addEventListener('keydown', function(event) {
-      console.log(event.keyCode);
-      if (event.keyCode === 13) {
-        console.log('yy');
-        event.preventDefault();
-      }
-    });
+    inputKeyword.addEventListener('input', sortInput);
+    inputKeyword.addEventListener('keydown', noEnter);
   }
 
-  var deptSelectList = document.querySelectorAll('.dept-select');
-  for (var deptSelect of deptSelectList) {
-    deptSelect.addEventListener('change', function() {
-      for (var emp of empList) {
-        var empItem = document.querySelector(".id-" + emp['emp_id']);
-        if (this.value > 0 && this.value != emp['dept_id']) {
-          console.log(emp['dept_id']);
-          empItem.style.display = "none";
-        }
-      }
-    })
+  var selectDeptList = document.querySelectorAll('.select-dept');
+  for (var selectDept of selectDeptList) {
+    selectDept.addEventListener('change', sortSelect);
+  }
+
+  var empListList = document.querySelectorAll('.emp-list');
+  for (var empList of empListList) {
+    empList
   }
 
 
-  var displayElem = document.getElementById('display-elem');
-
-  // 新規追加ボタンを押すとフォームを表示
-  addBtn.addEventListener('click', function(event) {
-    console.log(this);
-    displayElem.value = "disable";
-    var x = event.pageX;
-    var y = event.pageY;
-    addForm.style.position = 'absolute';
-    addForm.style.top = (y - 100) + 'px';
-    addForm.style.left = (x + 100) + 'px';
-    console.log(addForm);
-    addForm.style.display = 'block';
-
-  });
-
-  addCloseBtn.addEventListener('click', function() {
-    displayElem.value = 'enable';
-    addForm.style.display = 'none';
-  });
-
-
-
-  var scheduleDataList = <?= $scheduleDataList ?>;
 
 
   // スケジュールを押すと詳細表示
   scheduleItemList.forEach(function(scheduleItem, index) {
-    console.log(scheduleItem);
-    console.log(index);
 
+    var scheduleDesc = scheduleItem.parentElement.querySelector(".schedule-desc");
 
-    var scheduleDesc = scheduleItem.nextElementSibling;
     var closeBtn = scheduleDesc.querySelector('.close-btn');
     var editBtn = scheduleDesc.querySelector('.edit-btn');
+    //var attendeesList = scheduleDesc.querySelector('.attendees-list')
     var x, y;
+
+    //console.log(attendeesList);
+
     scheduleItem.addEventListener('click', function(event) {
       x = event.pageX;
       y = event.pageY;
@@ -588,7 +625,6 @@ if (isset($_POST['submit_delete'])) {
         scheduleDesc.style.top = y + 'px';
         scheduleDesc.style.display = 'block';
       }
-
     });
 
     // 詳細画面を閉じる
@@ -597,11 +633,10 @@ if (isset($_POST['submit_delete'])) {
       scheduleDesc.style.display = "none";
     });
 
+
     editBtn.addEventListener('click', function() {
-
-
+      displayElem.value = "disable";
       scheduleDesc.style.display = "none";
-
 
       // 新規登録画面から編集画面のクローンを作成 & 表示
       var scheduleData = scheduleDataList[index];
@@ -609,6 +644,7 @@ if (isset($_POST['submit_delete'])) {
       var closeBtn = editForm.querySelector('.close-btn');
 
       var formTitle = editForm.querySelector('.form-title');
+      var delBtn = editForm.querySelector('.delete-btn');
       var updateBtn = editForm.querySelector('.add-btn');
       var inputTitle = editForm.querySelector('.input-title');
       var inputDate = editForm.querySelector('.input-date');
@@ -616,10 +652,20 @@ if (isset($_POST['submit_delete'])) {
       var inputEndTime = editForm.querySelector('.input-endtime');
       var inputMemo = editForm.querySelector('.input-memo');
       var inputScheduleId = editForm.querySelector('.input-schedule-id');
+      var inputCheckList = editForm.querySelectorAll(".input-attend-check");
+      var inputKeyword = editForm.querySelector('.input-keyword');
+      var selectDept = editForm.querySelector('.select-dept');
+      var attendeesList = editForm.querySelector(".attendees-list");
+
+      // var addAttendeesBtn = editForm.querySelector(".add-attendees-btn");
 
 
+
+
+      console.log(scheduleData);
 
       formTitle.textContent = "スケジュール編集";
+      delBtn.style.display = "block";
       inputTitle.setAttribute('value', scheduleData['title']);
       inputDate.setAttribute('value', scheduleData['date']);
       inputStartTime.setAttribute('value', scheduleData['start_time']);
@@ -629,34 +675,88 @@ if (isset($_POST['submit_delete'])) {
       updateBtn.textContent = "更新";
       updateBtn.setAttribute('name', 'submit_update');
 
+
+      //  登録されている参加者にチェックを入れる
+      var checkedEmpList = [];
+      if (scheduleData['attendees_id'] != "0") {
+        var attendeesIdList = scheduleData['attendees_id'].split(',');
+        for (var inputCheck of inputCheckList) {
+          //   console.log(inputAttendee.value);
+          for (var attendeeId of attendeesIdList) {
+            if (inputCheck.value === attendeeId) {
+              inputCheck.checked = true;
+              checkedEmpList.push(attendeeId);
+            }
+          }
+        }
+      }
+
+      addAttendees(attendeesList, inputCheckList);
+
       editForm.style.position = 'absolute';
       editForm.style.left = x + 'px';
       editForm.style.top = y + 'px';
       editForm.style.display = 'block';
-
       document.body.appendChild(editForm);
+
+
+      for (var inputCheck of inputCheckList) {
+        inputCheck.addEventListener('change', addAttendees.bind(null, attendeesList, inputCheckList));
+      }
+
+      inputKeyword.addEventListener('input', sortInput);
+      selectDept.addEventListener('change', sortSelect);
 
       // 編集画面を閉じる
       closeBtn.addEventListener('click', function(event) {
         displayElem.value = "enable";
         editForm.remove();
-        console.log('editform消しますよ');
-        console.log(addForm);
-        console.log('editform消しました！！');
-        event.stopPropagation();
+
       });
-
-
-      console.log('y');
-      console.log(editForm);
-      console.log('n');
     });
 
   });
 
 
+  var displayElem = document.getElementById('display-elem');
 
 
+  // 新規追加ボタンを押すとフォームを表示
+  addBtn.addEventListener('click', function(event) {
+    if(displayElem.value === "enable"){
+      displayElem.value = "disable";
+      var x = event.pageX;
+      var y = event.pageY;
+      addForm.style.position = 'absolute';
+      addForm.style.top = (y - 100) + 'px';
+      addForm.style.left = (x + 100) + 'px';
+      console.log(addForm);
+      addForm.style.display = 'block';
+    }
+  });
+
+  var addAttendeesList = addForm.querySelector(".attendees-list");
+  var addInputCheckList = addForm.querySelectorAll(".input-attend-check");
+  for (var inputCheck of addInputCheckList) {
+    inputCheck.addEventListener("change", addAttendees.bind(null, addAttendeesList, addInputCheckList));
+  }
+
+
+  addCloseBtn.addEventListener('click', function() {
+    displayElem.value = 'enable';
+    addForm.style.display = 'none';
+  });
+
+
+  var inputCheckList = document.querySelectorAll('.input-attend-check');
+  for (var inputCheck of inputCheckList) {
+    inputCheck.addEventListener('change', function() {
+      if (this.checked) {
+
+      }
+    });
+
+  }
 
 
   // スケジュール追加前の入力エラーチェック
@@ -695,9 +795,7 @@ if (isset($_POST['submit_delete'])) {
     return (y + "-" + m + "-" + d);
   }
 </script>
-<!--
-<script src="js/index.js"></script>
-        -->
+
 </body>
 
 </html>

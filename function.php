@@ -67,7 +67,8 @@ function getWeek($theDate, $dateArray)
 function insertSchedule($empId, $date, $startTime, $endTime, $title, $memo, $attendeesIdList)
 {
   global $dbh;
-  var_dump(implode('X', $attendeesIdList));
+  var_dump(is_array($attendeesIdList) ? implode(',', $attendeesIdList) : 0);
+  var_dump(implode(',', $attendeesIdList));
   //exit;
   $sql = "INSERT INTO schedule (emp_id, date, start_time, end_time, title, memo, attendees_id) VALUES (?, ?, ?, ?, ?, ?, ?)";
   $stmt = $dbh->prepare($sql);
@@ -77,12 +78,12 @@ function insertSchedule($empId, $date, $startTime, $endTime, $title, $memo, $att
   $stmt->bindValue(4, $endTime);
   $stmt->bindValue(5, $title);
   $stmt->bindValue(6, $memo);
-  $stmt->bindValue(7, implode(',', $attendeesIdList));
+  $stmt->bindValue(7, is_array($attendeesIdList) ? implode(',', $attendeesIdList) : 0);
   $stmt->execute();
   var_dump($stmt);
   //  exit;
-  header("Location:http://localhost/ScheShare/index.php");
-  exit;
+ // header("Location:http://localhost/ScheShare/index.php");
+ // exit;
 }
 
 function updateSchedule($empId, $date, $startTime, $endTime, $title, $memo, $attendeesIdList, $scheduleId)
@@ -103,8 +104,8 @@ function updateSchedule($empId, $date, $startTime, $endTime, $title, $memo, $att
   var_dump($stmt);
   // exit;
   $stmt->execute();
-  header("Location:http://localhost/ScheShare/index.php");
-  exit;
+  //header("Location:http://localhost/ScheShare/index.php");
+  //exit;
 }
 
 function deleteSchedule($scheduleId)
@@ -114,8 +115,8 @@ function deleteSchedule($scheduleId)
   $stmt = $dbh->prepare($sql);
   $stmt->bindValue(1, $scheduleId);
   $stmt->execute();
-  header("Location:http://localhost/ScheShare/index.php");
-  exit;
+  //header("Location:http://localhost/ScheShare/index.php");
+  //exit;
 }
 
 
@@ -272,12 +273,11 @@ function getTimeFormat($time)
 function fetchAttendees($attendeesId)
 {
   $attendeesIdList = explode(',', $attendeesId);
-  //  var_dump($attendeesIdList);
+  //var_dump($attendeesIdList);
   foreach ($attendeesIdList as $attendeeId) {
-    $attendee = selectEmp($attendeeId);
-    $attendeeName[] = $attendee['emp_name'];
+    $attendees[] = selectEmp($attendeeId);
   }
-  return ", ".implode(", ", $attendeeName);
+  return $attendees;
 }
 
 
