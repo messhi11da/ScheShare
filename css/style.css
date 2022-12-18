@@ -9,7 +9,42 @@ li{
 }
 
 
+#top-wrapper{
+  display: flex;
+  
+}
 
+header{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 80px;
+  background-color: #CCFFCC;
+  vertical-align: middle;
+}
+
+#top-wrapper{
+  display: flex;
+  justify-content: space-around;
+  max-height: 300px;
+}
+#search-area{
+
+  max-height: 300px;
+  background-color: #FFFFCC;
+}
+.emp-list{
+  height: 80%;
+  overflow: auto;
+}
+
+
+#calendar-area{
+  text-align: center;
+  
+}
+
+/* 詳細画面関係 */
 .schedule-desc {
   background-color: white;
   border: 2px solid black;
@@ -25,20 +60,13 @@ li{
   font-size: 80%;
 }
 
-
-
-
 .schedule-form {
-  
   background-color: white;
   border: 2px solid black;
   border-radius: 10px;
   padding: 0 20px;
 }
 
-.form-wrapper{
-  display: flex;
-}
 
 .emp-list ul{
   height: 200px;

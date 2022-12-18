@@ -1,3 +1,4 @@
+
 // var scheduleForm = document.getElementById('schedule-form');
 var inputStartTime = document.querySelector('.input-starttime');
 var inputEndTime = document.querySelector('.input-endtime');
@@ -18,6 +19,7 @@ console.log(attendeesArea);
 
 
 var addForm = document.getElementById('add-form');
+var addCloseBtn = addForm.querySelector('.close-btn');
 
 //var editForm = document.getElementById('edit-form');
 
@@ -33,6 +35,11 @@ addBtn.addEventListener('click', function (event) {
         console.log(addForm);
         addForm.style.display = 'block';
     }
+});
+
+addCloseBtn.addEventListener('click', function(){
+    closeCheck.value = 'valid';
+    addForm.style.display = 'none';
 });
 
 var closeCheck = document.getElementById('close-check');
@@ -72,18 +79,22 @@ for (var scheduleItem of scheduleItemList) {
     console.log(scheduleItem);
     scheduleItem.addEventListener('click', function (event) {
 
-        console.log('y');
+        console.log(this);
+        console.log(this.dataset.json);
+        
         /*
         for (var scheduleDesc of scheduleDescList) {
             scheduleDesc.style.display = 'none';
         }
         */
         //  console.log(this.nextElementSibling);
-        var scheduleDesc = this.nextElementSibling;
-        var editBtn = scheduleDesc.querySelector('.edit-btn');
-        var scheduleCloseBtn = scheduleDesc.querySelector('.close-btn');
-        var editForm = scheduleDesc.nextElementSibling;
-        var editCloseBtn = editForm.querySelector('.close-btn');
+
+     //   var scheduleDesc = this.nextElementSibling;
+      //  var editBtn = scheduleDesc.querySelector('.edit-btn');
+     //   var scheduleCloseBtn = scheduleDesc.querySelector('.close-btn');
+      //  var editForm = scheduleDesc.nextElementSibling;
+      //  var editCloseBtn = editForm.querySelector('.close-btn');
+   /*   
 
         console.log(editCloseBtn);
 
@@ -118,7 +129,7 @@ for (var scheduleItem of scheduleItemList) {
             editForm.style.display = 'none';
         })
         
-
+*/
 
 
         /*
