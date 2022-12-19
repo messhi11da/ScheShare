@@ -281,8 +281,40 @@ function fetchAttendees($attendeesId)
 }
 
 
+/* ログイン関係 */
+function insertEmp($empId, $deptId, $password){
+  global $dbh;
+  $sql = "INSERT INTO emp (emp_id, dept_id, password) VALUES (?, ?, ?)";
+  $stmt = $dbh -> prepare($sql);
+  $stmt -> bindValue(1, $empId);
+  $stmt -> bindValue(1, $deptId);
+  $stmt -> bindValue(1, password_hash($password, PASSWORD_DEFAULT));
+  $res = $stmt -> execute();
+  return $res;
+}
+
+
+
+function loginErrorCheck($empId, $password){
+  $error = [];
+  $empId2 = preg_replace('/( |　)/', '', $empId);
+  $password2 = preg_replace('/( |　)/', '', $password);
+  if(empty($empId2)) $error[] = '社員番号を入力してください。';
+  if(empty($password2)) $error[] = 'パスワードを入力してください。';
+  if(empty($error)){
+    if(!is_numeric($empId2)) $error[] = '社員番号は数字で入力してください。';
+    if(mb_strlen($password2) < 8) $error[] = 'パスワードは8文字以上を入力してください。';
+  }
+
+}
+
+
+function registerErrorCheck($empId, $empName, $password, $deptId){
+  $error[] = loginErrorCheck($empId, $password);
+}
+
 function escape($word)
 {
-  $res = htmlspecialchars($word, ENT_QUOTES);
+  $res = htmlspecialchars($word, ENT_QUOTES, 'UTF-8');
   return $res;
 }

@@ -43,7 +43,7 @@ if (isset($_POST['submit_search'])) {
 
 //var_dump($_POST);
 $user = selectEmp($userId);
-$displayEmpList[] = $user;
+$_SESSION['display_emp'][] = $user;
 
 // 表示する社員の取得
 
@@ -51,13 +51,10 @@ if (isset($_POST['submit_display'])) {
   // var_dump($_POST);
 
   foreach ($_POST['checked_emp'] as $checkedEmpId) {
-    $checkedEmp = selectEmp($checkedEmpId);
-    $displayEmpList[] = $checkedEmp;
-    $_SESSION['display_emp'][] = $checkedEmp['emp_name'];
+    $_SESSION['display_emp'][] = selectEmp($checkedEmpId);;
   }
   var_dump($_SESSION);
 
-  var_dump($displayEmpList);
   //exit;
 }
 
@@ -123,8 +120,12 @@ var_dump($_POST);
       <p><a href="">ログアウト</a></p>
     </div>
   </header>
+
   <?php if (!empty($_SESSION['display_emp'])) : ?>
-    <p><?= implode('さん, ', $_SESSION['display_emp']) . "さんのスケジュールを表示中"  ?></p>
+    <?php foreach ($_SESSION['display_emp'] as $displayEmp) : ?>
+      <?= $displayEmp['emp_name'] . "(" . $displayEmp['emp_id'] . ")さん " ?>
+    <?php endforeach; ?>
+    のスケジュールを表示中
   <?php endif; ?>
 
 
@@ -132,13 +133,16 @@ var_dump($_POST);
 
 
     <form id="search-area" action="" method="post">
+
       <select class="select-dept">
         <option class="dept-option" value="0">全部署</option>
         <?php foreach ($deptList as $dept) : ?>
           <option class="dept-option" value="<?= $dept['dept_id'] ?>"><?= $dept['dept_name'] ?></option>
         <?php endforeach; ?>
       </select>
-      <input class="input-keyword" type="text">
+      <br>
+      <input class="input-keyword" width="" type="text" placeholder="（例) 社員番号,名前,部署名" style="width: 100%;">
+
 
 
       <div class="emp-list" style="display: none;">
@@ -159,8 +163,8 @@ var_dump($_POST);
           <?php endforeach; ?>
         </ul>
 
+        <button class="display-btn" type="submit" name="submit_display" value="1">スケジュールを表示</button>
       </div>
-      <button type="submit" name="submit_display" value="1">スケジュールを表示</button>
     </form>
 
 
@@ -171,26 +175,32 @@ var_dump($_POST);
 
     <div id="calendar-area">
 
-      <a href="index.php?date=<?= $m - 1 > 0 ? $y . "-" . ($m - 1) . "-1" : ($y - 1) . "-12-1" ?>">◁</a>
-      <span><?= $y ?>年<?= $m ?>月</span>
-      <a href="index.php?date=<?= $m + 1 <= 12 ? $y . "-" . ($m + 1) . "-1" : ($y + 1) . "-1-1" ?>">▷</a>
+      <h2 class="calendar-header">
+        <a href="index.php?date=<?= $m - 1 > 0 ? $y . "-" . ($m - 1) . "-1" : ($y - 1) . "-12-1" ?>">◁</a>
+        <span><?= $y ?>年<?= $m ?>月</span>
+        <a href="index.php?date=<?= $m + 1 <= 12 ? $y . "-" . ($m + 1) . "-1" : ($y + 1) . "-1-1" ?>">▷</a>
+      </h2>
+
       <!-- 月毎のカレンダー -->
-      <table id="calendar-table" border="1" width="850" style="table-layout:fixed; min-height:200px;">
-        <tr>
+      <table id="calendar-table" border="1" style="table-layout:fixed; min-height:200px;">
+        <tr style="color:#FFFFFF;">
           <!-- 曜日の表示 -->
           <?php for ($i = 0; $i < 7; $i++) : ?>
-            <th><?= getWeekName($i); ?></th>
+            <th style="background-color:<?= $i === 0 ? "red;" : ($i === 6 ? "blue;" : "black;") ?>">
+              <?= getWeekName($i); ?>
+            </th>
           <?php endfor; ?>
         </tr>
-        <?php foreach ($dateArray as $key => $date2) : ?>
+        <?php foreach ($dateArray as $day2 => $date2) : ?>
           <?php list($y, $m, $d) = explode('-', $date2); ?>
-          <?php if (($key) % 7 == 0) : ?>
+          <?php if (($day2) % 7 == 0) : ?>
             <tr>
             <?php endif; ?>
-            <td>
-              <a href="index.php?date=<?= $date2 ?>"><?= (int)$d ?></a>
+            <td bgcolor="<?= $day2 % 7 === 0 ? "#FFCCFF" : ($day2 % 7 === 6 ? "#66CCFF" : "#FFFFFF") ?>">
+              <a href="index.php?date=<?= $date2 ?>">
+                <?= (int)$d ?></a>
             </td>
-            <?php if (($key) % 7 == 6) : ?>
+            <?php if (($day2) % 7 == 6) : ?>
             </tr>
           <?php endif; ?>
         <?php endforeach; ?>
@@ -205,273 +215,299 @@ var_dump($_POST);
 
   <br>
 
-  <button id="add-btn" type="button">新規スケジュール追加</button>
-  <button type="button">クイック招集モード</button>
 
 
 
 
+
+
+  <input id="display-elem" type="hidden" value="enable">
 
 
   <!-- 週ごとのスケジュール -->
-  <input id="display-elem" type="hidden" value="enable">
   <div id="schedule-wrapper">
+
+    <div id="schedule-header">
+      <button id="add-btn" type="button">新規スケジュール追加</button>
+      <button id="free-time-btn" type="button">空き時間を表示</button>
+    </div>
+
     <?php
     $json = [];
     $jsonIndex = 0;
-    foreach ($displayEmpList as $key2 => $displayEmp) :
-      //   $lastEndTime = 0; 
+    if (!empty($_SESSION['display_emp'])) :
+      foreach ($_SESSION['display_emp'] as $key2 => $displayEmp) :
+        //   $lastEndTime = 0; 
     ?>
-      <div style="display:flex; align-items:center">
-        <div style="background-color:lightblue;">ここに社員の情報</div>
-        <table id="schedule-table" border="1" width="850" style="table-layout:fixed; min-height:200px;">
+        <div class="schedule-container">
+          <div class="emp-profile">
+            ここに社員の情報
+          </div>
 
-          <?php if ($key2 === 0) : ?>
-            <tr style="height: 30px;">
+          <table class="schedule-table" border="1" width="850">
 
-              <?php foreach ($week as $key => $date3) : ?>
-                <?php list($y, $m, $d) = explode('-', $date3); ?>
-                <th><?= "$m/" . (int)$d . "(" . getWeekName($key) . ")" ?></th>
-              <?php endforeach; ?>
+            <?php if ($key2 === 0) : ?>
+              <tr style="height: 30px;">
 
-            </tr>
-          <?php endif; ?>
+                <?php foreach ($week as $day3 => $date3) : ?>
+                  <?php list($y, $m, $d) = explode('-', $date3); ?>
+                  <th><?= "$m/" . (int)$d . "(" . getWeekName($day3) . ")" ?></th>
+                <?php endforeach; ?>
 
-          <!-- 一週間のスケジュール（一人分） -->
+              </tr>
+            <?php endif; ?>
 
-
-          <?php
-
-
-          $flag = 0;
-
-          for ($startTime = 0; $startTime < 24; $startTime++) :
-
-            $scheduleList = selectSchedule($displayEmp['emp_id'], $week, $startTime);
+            <!-- 一週間のスケジュール（一人分） -->
 
 
+            <?php
 
-            if (!empty($scheduleList)) :
-              // var_dump($scheduleList);
-              // exit;
-          ?>
-              <tr>
-                <?php
-                $flag = 1;
-                foreach ($week as $key => $date) :
-                ?>
-                  <td>
-                    <?php if (!empty($scheduleList[$key])) : ?>
 
-                      <ul style="max-height:40px;">
+            $flag = 0;
 
-                        <?php foreach ($scheduleList[$key] as $schedule) : ?>
-                          <?php $json[] = $schedule;
-                          ?>
+            for ($startTime = 0; $startTime < 24; $startTime++) :
 
-                          <li class="schedule-item" style="list-style: none;">
-                            <?= $schedule['start_time'] ?>~
-                            <?= $schedule['end_time'] ?>
-                            <?= $schedule['title'] ?>
-                          </li>
+              $scheduleList = selectSchedule($displayEmp['emp_id'], $week, $startTime);
 
 
 
-                          <!-- スケジュール詳細画面 -->
-                          <div class="schedule-desc" style="display: none;">
-                            <div class="schedule-header">
-                              <h4>スケジュール詳細</h4>
-                              <button class="edit-btn" type="button">編集</button>
-                              <button class="close-btn" type="button" value="invalid">×</button>
-                            </div>
-                            <p class="schedule-datetime">
-                              <?php list($y, $m, $d) = explode('-', $schedule['date']); ?>
-                              <?= $y ?>/<?= $m ?>/<?= $d ?>/(<?= getWeekName($key); ?>)
+              if (!empty($scheduleList)) :
+                // var_dump($scheduleList);
+                // exit;
+            ?>
+                <tr>
+                  <?php
+                  $flag = 1;
+                  foreach ($week as $day4 => $date4) :
+                  ?>
+                    <td bgcolor="<?= ($day4 + $key2) % 2 != 1 ? "white" : "#EEEEEE" ?>">
+                      <?php if (!empty($scheduleList[$day4])) : ?>
+
+                        <ul style="max-height:40px;">
+
+                          <?php foreach ($scheduleList[$day4] as $schedule) : ?>
+                            <?php $json[] = $schedule;
+                            ?>
+
+                            <li class="schedule-item" style="list-style: none;">
                               <?= $schedule['start_time'] ?>~
                               <?= $schedule['end_time'] ?>
-                            </p>
-                            <p><?= $schedule['title'] ?></p>
-                            <p>
-                              説明：<br>
-                              <?= $schedule['memo'] ?>
-                            </p>
-                            参加者：
-                            <ul>
-                              <li>
-                                <?= $user['emp_name'] . "(" . $user['emp_id'] . ")" ?>
-                              </li>
-                              <?php if (!empty($schedule['attendees_id'])) :
-                             
-                                $attendees = fetchAttendees($schedule['attendees_id']);
-                                foreach ($attendees as $attendee) :
-                              ?>
-                                  <li>
-                                    <?= $attendee["emp_name"] . "(" . $attendee['emp_id'] . ")" ?>
-                                  </li>
-
-                                <?php endforeach; ?>
-                              <?php endif; ?>
-                            </ul>
-                          </div>
+                              <?= $schedule['title'] ?>
+                            </li>
 
 
-                          <?php $jsonIndex++; ?>
-                        <?php endforeach; ?>
-                        <?php $schedule = array(); ?>
-                      </ul>
-                    <?php endif; ?>
+
+                            <!-- スケジュール詳細画面 -->
+                            <div class="schedule-desc display-elem" style="display: none;">
+                              <div class="display-header">
+                                <h4>スケジュール詳細</h4>
+                                <div>
+                                  <button class="edit-btn" type="button">編集</button>
+                                  <button class="close-btn" type="button" value="invalid">×</button>
+                                </div>
+                              </div>
+                              <p class="schedule-datetime">
+                                <?php list($y, $m, $d) = explode('-', $schedule['date']); ?>
+                                <?= $y ?>/<?= $m ?>/<?= $d ?>/(<?= getWeekName($day4); ?>)
+                                <?= $schedule['start_time'] ?>~
+                                <?= $schedule['end_time'] ?>
+                              </p>
+                              <p><?= $schedule['title'] ?></p>
+                              <p>
+                                説明：<br>
+                                <?= $schedule['memo'] ?>
+                              </p>
+                              <p>
+                              参加者：
+                              <ul>
+                                <li>
+                                  <?= $user['emp_name'] . "(" . $user['emp_id'] . ")" ?>
+                                </li>
+                                <?php if (!empty($schedule['attendees_id'])) :
+
+                                  $attendees = fetchAttendees($schedule['attendees_id']);
+                                  foreach ($attendees as $attendee) :
+                                ?>
+                                    <li>
+                                      <?= $attendee["emp_name"] . "(" . $attendee['emp_id'] . ")" ?>
+                                    </li>
+
+                                  <?php endforeach; ?>
+                                <?php endif; ?>
+                              </ul>
+                              </p>
+                            </div>
 
 
-                  </td>
+                            <?php $jsonIndex++; ?>
+                          <?php endforeach; ?>
+                          <?php $schedule = array(); ?>
+                        </ul>
+                      <?php endif; ?>
 
-                <?php endforeach; ?>
+
+                    </td>
+
+                  <?php endforeach; ?>
+                </tr>
+            <?php endif;
+
+            endfor; ?>
+            <?php if ($flag === 0) : ?>
+              <tr>
+                <?php for ($j = 0; $j < 7; $j++) : ?>
+                  <td bgcolor="<?= ($day4 + $j) % 2 != 1 ? "white" : "#EEEEEE" ?>"></td>
+                <?php endfor; ?>
               </tr>
-          <?php endif;
-
-          endfor; ?>
-          <?php if ($flag === 0) : ?>
-            <tr>
-              <?php for ($j = 0; $j < 7; $j++) : ?>
-                <td></td>
-              <?php endfor; ?>
-            </tr>
-          <?php endif; ?>
-        </table>
-      </div>
-    <?php endforeach; ?>
-    <?php //var_dump($json); 
-    $scheduleDataList = json_encode($json);
-    ?>
+            <?php endif; ?>
+          </table>
+        </div>
+      <?php endforeach; ?>
+      <?php //var_dump($json); 
+      $scheduleDataList = json_encode($json);
+      ?>
 
 
   </div>
 
 
-  <!-- 空き時間表示用テーブル -->
+  <!-- 空き時間表示テーブル -->
 
   <?php
-  $interval = 0.25;
-  list($freeTimeList, $max) = calcFreeTime($displayEmpList, $week, $interval);
+      $interval = 0.25;
+      list($freeTimeList, $max) = calcFreeTime($_SESSION['display_emp'], $week, $interval);
   ?>
 
-  <table border="1">
-    <tr>
+  <div id="free-time-table" class="display-elem" style="display: none;">
+    <div class="display-header">
+      <?php if (!empty($_SESSION['display_emp'])) : ?>
+        <?php foreach ($_SESSION['display_emp'] as $displayEmp) : ?>
+          <?= $displayEmp['emp_name'] . "(" . $displayEmp['emp_id'] . ")さん " ?>
+        <?php endforeach; ?>
+        の空いてる時間帯
+      <?php endif; ?>
 
-      <?php foreach ($week as $key => $date3) : ?>
-        <?php list($y, $m, $d) = explode('-', $date3); ?>
-        <th><?= "$m/" . (int)$d . "(" . getWeekName($key) . ")" ?></th>
-      <?php endforeach; ?>
-
-    </tr>
-
-    <?php
-
-    $j = 0;
-    for ($k = 0; $k < $max; $k++) :
-
-      $flag = 0;
-      for ($i = 0; $i < 7; $i++) :
-        if (isset($freeTimeList[$i][$j])) :
-          $flag = 1;
-        endif;
-      endfor;
-
-      if ($flag === 1) :
-    ?>
-        <tr>
-          <?php
-          foreach ($week as $key => $date) :
-          ?>
-            <td>
-              <?php if (isset($freeTimeList[$key][$j])) : ?>
-
-                <?= $freeTimeList[$key][$j] ?>
-
-              <?php endif; ?>
-            </td>
-
-          <?php endforeach; ?>
-        </tr>
-
-
-    <?php endif;
-      $j++;
-    endfor; ?>
-
-  </table>
-
-
-
-  <!-- スケジュールの新規追加・編集フォーム  -->
-
-  <form id="add-form" class="schedule-form" action="" method="post" style="display: none;">
-    <div class="form-wrapper">
-      <div class="main-form">
-        <div class="form-header">
-          <h4 class="form-title">新規スケジュール登録</h4>
-
-          <button class="delete-btn" type="submit" name="submit_delete" value="1" style="display:none;">削除</button>
-          <button class="close-btn" type="button">×</button>
-        </div>
-        <input class="input-title" id="title" type="text" name="title" placeholder="タイトルを追加">
-        <br>
-        日時：
-        <input class="input-date" type="date" name="date" value="<?= $date ?>">
-        <br>
-        時刻：
-        <input class="input-starttime" id="begin" type="time" name="start">
-        <span>～</span>
-        <input class="input-endtime" id="end" type="time" name="end">
-        <br>
-        参加者：
-        <ul class="attendees-list">
-          <li class="attendees-item"><?= $user['emp_name'] . "(" . $user['emp_id'] . ")" ?></li>
-        </ul>
-
-        <br>
-        <textarea class="input-memo" name="memo" placeholder="説明"></textarea>
-        <br>
-
-        <input class="input-schedule-id" type="hidden" name="schedule_id" value="">
-        <button class="add-btn" type="submit" name="submit_add" value="1">登録</button>
-      </div>
-
-
-      <div class="sub-form">
-        <p>参加者を追加</p>
-
-        <div>
-
-          <select class="select-dept">
-            <option class="dept-option" value="0">全部署</option>
-            <?php foreach ($deptList as $dept) : ?>
-              <option class="dept-option" value="<?= $dept['dept_id'] ?>"><?= $dept['dept_name'] ?></option>
-            <?php endforeach; ?>
-          </select>
-          <input class="input-keyword" type="text">
-
-
-          <div class="emp-list">
-            <ul>
-              <?php foreach ($empList as $emp) : ?>
-                <li class="emp-item id-<?= $emp['emp_id'] ?>" style="display:none;">
-                  <label>
-                    <?= $emp['emp_id'] ?>/
-                    <?= $emp['dept_name'] ?>/
-                    <?= $emp['emp_name'] ?>
-                    <input class="input-attend-check" type="checkbox" name="checked_emp[]" data-name="<?= $emp['emp_name'] ?>" value="<?= $emp['emp_id'] ?>" <?= $emp['emp_id'] === $userId ? "checked disabled" : "" ?>>
-                  </label>
-                </li>
-              <?php endforeach; ?>
-            </ul>
-            <button class="add-attendees-btn" type="button">招集</button>
-          </div>
-
-        </div>
-
-      </div>
+      <button class="close-btn" type="button">×</button>
     </div>
-  </form>
+    <table border="1" bgcolor="#FFFFFF" width="700">
+      <tr>
+
+        <?php foreach ($week as $key => $date3) : ?>
+          <?php list($y, $m, $d) = explode('-', $date3); ?>
+          <th><?= "$m/" . (int)$d . "(" . getWeekName($key) . ")" ?></th>
+        <?php endforeach; ?>
+
+      </tr>
+
+      <?php
+
+      $j = 0;
+      for ($k = 0; $k < $max; $k++) :
+
+        $flag = 0;
+        for ($i = 0; $i < 7; $i++) :
+          if (isset($freeTimeList[$i][$j])) :
+            $flag = 1;
+          endif;
+        endfor;
+
+        if ($flag === 1) :
+      ?>
+          <tr>
+            <?php
+            foreach ($week as $key => $date) :
+            ?>
+              <td>
+                <?php if (isset($freeTimeList[$key][$j])) : ?>
+
+                  <?= $freeTimeList[$key][$j] ?>
+
+                <?php endif; ?>
+              </td>
+
+            <?php endforeach; ?>
+          </tr>
+
+
+      <?php endif;
+        $j++;
+      endfor; ?>
+
+    </table>
+
+  </div>
+<?php endif; ?>
+
+
+<!-- スケジュールの新規追加・編集フォーム  -->
+
+<form id="add-form" class="display-elem" action="" method="post" style="display: none;">
+  <div class="form-wrapper">
+    <div class="main-form">
+      <div class="display-header">
+        <h4 class="form-title">新規スケジュール登録</h4>
+
+        <button class="delete-btn" type="submit" name="submit_delete" value="1" style="display:none;">削除</button>
+        <button class="close-btn" type="button">×</button>
+      </div>
+      <input class="input-title" id="title" type="text" name="title" placeholder="タイトルを追加">
+      <br>
+      日時：
+      <input class="input-date" type="date" name="date" value="<?= $date ?>">
+      <br>
+      時刻：
+      <input class="input-starttime" id="begin" type="time" name="start">
+      <span>～</span>
+      <input class="input-endtime" id="end" type="time" name="end">
+      <br>
+      説明：
+      <textarea class="input-memo" name="memo" placeholder="説明"></textarea>
+      <br>
+      参加者：
+      <ul class="attendees-list">
+        <li class="attendees-item"><?= $user['emp_name'] . "(" . $user['emp_id'] . ")" ?></li>
+      </ul>
+
+
+      <input class="input-schedule-id" type="hidden" name="schedule_id" value="">
+      <button class="add-btn" type="submit" name="submit_add" value="1">登録</button>
+    </div>
+
+
+    <div class="sub-form">
+      <p>参加者を追加</p>
+
+      <div>
+
+        <select class="select-dept">
+          <option class="dept-option" value="0">全部署</option>
+          <?php foreach ($deptList as $dept) : ?>
+            <option class="dept-option" value="<?= $dept['dept_id'] ?>"><?= $dept['dept_name'] ?></option>
+          <?php endforeach; ?>
+        </select>
+        <input class="input-keyword" type="text">
+
+
+        <div class="emp-list">
+          <ul>
+            <?php foreach ($empList as $emp) : ?>
+              <li class="emp-item id-<?= $emp['emp_id'] ?>" style="display:none;">
+                <label>
+                  <?= $emp['emp_id'] ?>/
+                  <?= $emp['dept_name'] ?>/
+                  <?= $emp['emp_name'] ?>
+                  <input class="input-attend-check" type="checkbox" name="checked_emp[]" data-name="<?= $emp['emp_name'] ?>" value="<?= $emp['emp_id'] ?>" <?= $emp['emp_id'] === $userId ? "checked disabled" : "" ?>>
+                </label>
+              </li>
+            <?php endforeach; ?>
+          </ul>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</form>
 
 
 </body>
@@ -491,18 +527,8 @@ var_dump($_POST);
 
   var addBtn = document.getElementById('add-btn');
 
-
-
-  // var addAttendeesBtn = document.getElementById('add-attendees-btn');
-  //  var checkEmpList = document.querySelectorAll('.checkbox-emp');
-  //var attendeesArea = document.getElementById('attendees-area');
-
-
-
-
   var addForm = document.getElementById('add-form');
   var addCloseBtn = addForm.querySelector('.close-btn');
-
 
   var empDataList = <?= $empDataList ?>;
   var scheduleDataList = <?= $scheduleDataList ?>;
@@ -614,15 +640,11 @@ var_dump($_POST);
     //console.log(attendeesList);
 
     scheduleItem.addEventListener('click', function(event) {
-      x = event.pageX;
-      y = event.pageY;
 
-      // 詳細画面を開く
+      // 詳細画面を開く  
       if (displayElem.value === 'enable') {
         displayElem.value = 'disable';
-        scheduleDesc.style.position = 'absolute';
-        scheduleDesc.style.left = x + 'px';
-        scheduleDesc.style.top = y + 'px';
+
         scheduleDesc.style.display = 'block';
       }
     });
@@ -693,12 +715,8 @@ var_dump($_POST);
 
       addAttendees(attendeesList, inputCheckList);
 
-      editForm.style.position = 'absolute';
-      editForm.style.left = x + 'px';
-      editForm.style.top = y + 'px';
       editForm.style.display = 'block';
       document.body.appendChild(editForm);
-
 
       for (var inputCheck of inputCheckList) {
         inputCheck.addEventListener('change', addAttendees.bind(null, attendeesList, inputCheckList));
@@ -711,7 +729,6 @@ var_dump($_POST);
       closeBtn.addEventListener('click', function(event) {
         displayElem.value = "enable";
         editForm.remove();
-
       });
     });
 
@@ -723,14 +740,8 @@ var_dump($_POST);
 
   // 新規追加ボタンを押すとフォームを表示
   addBtn.addEventListener('click', function(event) {
-    if(displayElem.value === "enable"){
+    if (displayElem.value === "enable") {
       displayElem.value = "disable";
-      var x = event.pageX;
-      var y = event.pageY;
-      addForm.style.position = 'absolute';
-      addForm.style.top = (y - 100) + 'px';
-      addForm.style.left = (x + 100) + 'px';
-      console.log(addForm);
       addForm.style.display = 'block';
     }
   });
@@ -781,11 +792,24 @@ var_dump($_POST);
     }
   });
 
-
   inputStartTime.addEventListener('change', function() {
     inputEndTime.value = inputStartTime.value;
   })
 
+  var freeTimeTable = document.getElementById("free-time-table");
+  var freeTimeBtn = document.getElementById("free-time-btn");
+  var freeTimeCloseBtn = freeTimeTable.querySelector(".close-btn");
+  console.log(freeTimeTable);
+  freeTimeBtn.addEventListener("click", function() {
+    console.log(freeTimeTable);
+    if (displayElem.value === "enable") {
+      freeTimeTable.style.display = "block";
+    }
+  });
+  freeTimeCloseBtn.addEventListener("click", function() {
+    freeTimeTable.style.display = "none";
+    displayElem.value = "enable";
+  });
 
   function getToday() {
     var date = new Date();

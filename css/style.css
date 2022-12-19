@@ -1,11 +1,14 @@
 
 
 
-ul{
+.schedule-table td > ul{
   padding-left: 0;
 }
 
-
+header h1 a, #calendar-area a{
+  text-decoration: none;
+  color: #000000;
+}
 
 #top-wrapper{
   display: flex;
@@ -24,23 +27,99 @@ header{
 #top-wrapper{
   display: flex;
   justify-content: space-around;
-  max-height: 300px;
+  width: 80%;
+  margin: 0 auto;
+  background-color: aliceblue;
 }
-#search-area{
 
-  max-height: 300px;
-  background-color: #FFFFCC;
+/* 社員検索エリア */
+#search-area{
+  position: relative;
+  flex-basis: 20%;
+  height: 250px;
+  width: 300px;
+  margin: 15px auto;
+  border-radius: 10px;
+  border: solid;
+  padding: 10px;
+}
+.display-btn{
+  position: absolute;
+  width: 80%;
+  bottom: 0;
+  left: 10%;
 }
 .emp-list{
   height: 80%;
   overflow: auto;
 }
 
-
+/* カレンダー */
 #calendar-area{
-  text-align: center;
-  
+  flex-basis: 70%;
+  background-color: aqua;
 }
+#calendar-area, #calendar-area td{
+  text-align: center;  
+}
+#calendar-table{
+  width: 90%;
+  margin: 0 auto;
+}
+#calendar-table a{
+  display: inline-block;
+  height: 100%;
+  width: 100%;
+  font-weight: bold;
+}
+
+/* スケジュール表 */
+#schedule-wrapper{
+  width: 80%;
+  margin: 0 auto;
+
+}
+#schedule-header{
+  display: flex;
+  justify-content: right;
+}
+
+.schedule-container{
+  display: flex;
+  justify-content: space-between;
+  padding: 0 10px;
+
+}
+
+.emp-profile{
+  flex-basis: 10%;
+  border: solid;
+}
+.schedule-table{
+  flex-basis: 90%;
+  table-layout:fixed;
+  min-height:200px;
+}
+
+/* 空き時間表示テーブル */
+.display-elem{
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translateY(-50%);
+  transform: translateX(-50%);
+  padding: 30px;
+  background-color: #FFFFFF;
+  border: solid;
+  border-radius: 10px;
+}
+
+.display-header{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 
 /* 詳細画面関係 */
 .schedule-desc {
@@ -49,21 +128,12 @@ header{
   border-radius: 10px;
   padding: 0 20px;
 }
-.schedule-header{
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+
 .schedule-info .schedule-datetime{
   font-size: 80%;
 }
 
 
-
-.emp-list ul{
-  height: 200px;
-  overflow: auto;
-}
 
 /* フォーム画面 */
 .schedule-form {
