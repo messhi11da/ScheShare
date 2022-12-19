@@ -67,8 +67,7 @@ function getWeek($theDate, $dateArray)
 function insertSchedule($empId, $date, $startTime, $endTime, $title, $memo, $attendeesIdList)
 {
   global $dbh;
-  var_dump(is_array($attendeesIdList) ? implode(',', $attendeesIdList) : 0);
-  var_dump(implode(',', $attendeesIdList));
+
   //exit;
   $sql = "INSERT INTO schedule (emp_id, date, start_time, end_time, title, memo, attendees_id) VALUES (?, ?, ?, ?, ?, ?, ?)";
   $stmt = $dbh->prepare($sql);
@@ -78,7 +77,7 @@ function insertSchedule($empId, $date, $startTime, $endTime, $title, $memo, $att
   $stmt->bindValue(4, $endTime);
   $stmt->bindValue(5, $title);
   $stmt->bindValue(6, $memo);
-  $stmt->bindValue(7, is_array($attendeesIdList) ? implode(',', $attendeesIdList) : 0);
+  $stmt->bindValue(7, implode('|', $attendeesIdList));
   $stmt->execute();
   var_dump($stmt);
   //  exit;
@@ -157,7 +156,7 @@ function selectAllEmp()
 function selectEmp($empId)
 {
   global $dbh;
-  $sql = "SELECT emp_id, emp_name, dept_name FROM emp LEFT OUTER JOIN dept ON emp.dept_id = dept.dept_id WHERE emp.emp_id = ?";
+  $sql = "SELECT emp_id, emp_name, dept_name, password FROM emp LEFT OUTER JOIN dept ON emp.dept_id = dept.dept_id WHERE emp.emp_id = ?";
   $stmt = $dbh->prepare($sql);
   $stmt->bindValue(1, $empId);
   $stmt->execute();
@@ -182,7 +181,7 @@ function selectSchedule($empId, $week, $startTime)
     $sql = "SELECT * FROM schedule WHERE (emp_id = ? OR attendees_id LIKE ?) AND date = ? AND start_time >= ? AND start_time < ? ORDER BY start_time ASC";
     $stmt = $dbh->prepare($sql);
     $stmt->bindValue(1, $empId);
-    $stmt->bindValue(2, '%X' . $empId);
+    $stmt->bindValue(2, '%|' . $empId.'%');
     $stmt->bindValue(3, $date);
     $stmt->bindValue(4, getTimeFormat($startTime));
     $stmt->bindValue(5, getTimeFormat($startTime + 1));
@@ -272,7 +271,7 @@ function getTimeFormat($time)
 
 function fetchAttendees($attendeesId)
 {
-  $attendeesIdList = explode(',', $attendeesId);
+  $attendeesIdList = explode('|', $attendeesId);
   //var_dump($attendeesIdList);
   foreach ($attendeesIdList as $attendeeId) {
     $attendees[] = selectEmp($attendeeId);
@@ -282,36 +281,21 @@ function fetchAttendees($attendeesId)
 
 
 /* ログイン関係 */
-function insertEmp($empId, $deptId, $password){
+function insertEmp($empId, $empName, $deptId, $password){
   global $dbh;
-  $sql = "INSERT INTO emp (emp_id, dept_id, password) VALUES (?, ?, ?)";
+  $sql = "INSERT INTO emp (emp_id, emp_name, dept_id, password) VALUES (?, ?, ?, ?)";
   $stmt = $dbh -> prepare($sql);
   $stmt -> bindValue(1, $empId);
-  $stmt -> bindValue(1, $deptId);
-  $stmt -> bindValue(1, password_hash($password, PASSWORD_DEFAULT));
+  $stmt -> bindValue(2, $empName);
+  $stmt -> bindValue(3, $deptId);
+  $stmt -> bindValue(4, password_hash($password, PASSWORD_DEFAULT));
+  var_dump($stmt);
+ // exit;
   $res = $stmt -> execute();
   return $res;
 }
 
 
-
-function loginErrorCheck($empId, $password){
-  $error = [];
-  $empId2 = preg_replace('/( |　)/', '', $empId);
-  $password2 = preg_replace('/( |　)/', '', $password);
-  if(empty($empId2)) $error[] = '社員番号を入力してください。';
-  if(empty($password2)) $error[] = 'パスワードを入力してください。';
-  if(empty($error)){
-    if(!is_numeric($empId2)) $error[] = '社員番号は数字で入力してください。';
-    if(mb_strlen($password2) < 8) $error[] = 'パスワードは8文字以上を入力してください。';
-  }
-
-}
-
-
-function registerErrorCheck($empId, $empName, $password, $deptId){
-  $error[] = loginErrorCheck($empId, $password);
-}
 
 function escape($word)
 {

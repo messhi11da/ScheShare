@@ -1,19 +1,36 @@
 <?php
 require_once(dirname(__FILE__) . '/function.php');
 session_start();
+$_SESSION['user_id'] = "";
 
 $deptList = selectDept(); // 部署リストを取得
 
-/*
-if (!isset($_POST['submit_register'])) {
-    $res = insertEmp($_POST['emp_id'], $_POST['dept_id'], $_POST['password']);
-    if ($res) {
-        $_SESSION['user_id'] = $_POST['emp_id'];
-        header('Location: http://localhost/ScheShare/index.php');
-        exit;
+var_dump($_POST);
+if(isset($_POST['submit_login'])){
+    $empId = preg_replace('/( |　)/', '', escape($_POST['emp_id']));
+    $password = preg_replace('/( |　)/', '', escape($_POST['password']));
+
+
+    if (empty($empId)) $error[] = '社員番号を入力してください。';
+    elseif (!is_numeric($empId)) $error[] = '社員番号は数字で入力してください。';
+    if (empty($password)) $error[] = 'パスワードを入力してください。';
+    elseif (mb_strlen($password) < 8) $error[] = 'パスワードは8文字以上を入力してください。';
+
+    if(empty($error)){
+        $tempEmp = selectEmp($empId);
+        if($tempEmp != false){
+            if(password_verify($password, $tempEmp['password'])){
+                $_SESSION['user_id'] = $tempEmp['emp_id'];
+                header('Location: http://localhost/ScheShare/index.php');
+                exit();            
+            }else $error[] = 'パスワードが間違っています。';
+        }else $error[] = 'IDかパスワードが間違っています。';
     }
+    var_dump($error);
+
 }
-*/
+
+
 ?>
 
 <!DOCTYPE html>
@@ -23,54 +40,40 @@ if (!isset($_POST['submit_register'])) {
 <head>
     <meta charset="utf-8">
     <title>ScheShare - ログイン画面</title>
-    <link href="./css/style.css" rel="stylesheet">Ï
+    <link href="./css/style.css" rel="stylesheet">
 </head>
 
 <body>
     <h2>ScheShare</h2>
     <p>複数ユーザーでスケジュールを共有できるアプリです。</p>
 
-    <form id="login-form" class="display-elem" action="login_check.php" method="post" style="display: block;">
-        <label id="emp_id">ID(社員番号):</label>
-        <br>
-        <input for="emp_id" type="">
-        <br>
-        <label id="password">パスワード:</label>
-        <br>
-        <input type="password">
-        <br>
-        <button type="submit" name="submit_login" value="1">ログイン</button>
-        <a id="add-emp-btn" href="">新規登録</a>
-    </form>
+    <div class="display-elem" >
+        <?php if(!empty($error)): ?>
+            <ul>
+                <?php foreach($error as $err): ?>
+                    <li><?= $err ?></li>
+                <?php endforeach; ?>
+            </ul>
+        <?php endif; ?>
 
-    <form id="register-form" class="display-elem" action="" method="post" style="display: none;">
-        <label id="emp_id">ID(社員番号):</label>
-        <br>
-        <input for="emp_id" type="text" name="emp_id">
-        <br>
-        <label id="emp_name">名前:</label>
-        <br>
-        <input for="emp_name" type="text" name="emp_name">
-        <br>
-        <label id="password">パスワード:</label>
-        <br>
-        <input type="password" name="password">
-        <br>
-        <label id="dept">所属部署名:</label>
-        <br>
-        <select name="dept_id">
-            <option>所属部署</option>
-            <?php foreach ($deptList as $dept) : ?>
-                <option value="<?= $dept['dept_id'] ?>"><?= $dept['dept_name'] ?></option>
-            <?php endforeach; ?>
-        </select>
-        <br>
-        <button type="submit" name="submit_register" value="1">登録</button>
+        <form id="login-form" action="" method="post" style="display: block;">
+            <label id="emp_id">ID(社員番号):</label>
+            <br>
+            <input for="emp_id" type="text" name="emp_id">
+            <br>
+            <label id="password">パスワード:</label>
+            <br>
+            <input for="password" type="password" name="password">
+            <br>
+            <button type="submit" name="submit_login" value="1">ログイン</button>
+            <a href="register.php">新規登録</a>
+        </form>
+    </div>
 
 
-    </form>
 
     <script>
+        /*
         var loginForm = document.getElementById("login-form");
         var registerForm = document.getElementById("register-form");
         var addEmpBtn = document.getElementById("add-emp-btn");
@@ -80,6 +83,7 @@ if (!isset($_POST['submit_register'])) {
             loginForm.style.display = "none";
             registerForm.style.display = "block";
         })
+        */
     </script>
 </body>
 

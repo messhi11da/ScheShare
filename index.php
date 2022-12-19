@@ -1,9 +1,18 @@
 <?php
 require_once(dirname(__FILE__) . '/function.php');
 session_start();
+
 $_SESSION['display_emp'] = array();
 
-$userId = '154';
+$userId = $_SESSION['user_id'];
+
+var_dump($_SESSION['user_id']);
+//exit;
+
+if(!isset($_SESSION['user_id']) || $_SESSION['user_id'] === ""){
+  header('Location: http://localhost/ScheShare/login.php');
+  exit();
+}
 
 if (isset($_GET['date'])) {
   $date = escape($_GET['date']);
@@ -66,7 +75,7 @@ if (isset($_POST['submit_add'])) {
   //exit;
   $title = escape($_POST['title']);
   $memo = escape($_POST['memo']);
-  $checkedEmp = isset($_POST['checked_emp']) ? $_POST['checked_emp'] : 0;
+  $checkedEmp = $_POST['checked_emp'];
   var_dump($checkedEmp);
   //exit;
   insertSchedule($userId, $_POST['date'], $_POST['start'], $_POST['end'], $title, $memo, $checkedEmp);
@@ -80,7 +89,7 @@ if (isset($_POST['submit_update'])) {
   //exit;
   $title = escape($_POST['title']);
   $memo = escape($_POST['memo']);
-  $checkedEmp = isset($_POST['checked_emp']) ? $_POST['checked_emp'] : 0;
+  $checkedEmp = $_POST['checked_emp'];
   updateSchedule($userId, $_POST['date'], $_POST['start'], $_POST['end'], $title, $memo, $checkedEmp, $_POST['schedule_id']);
   header("Location:http://localhost/ScheShare/index.php?date=" . $date);
   exit;
@@ -117,7 +126,7 @@ var_dump($_POST);
     <h1><a href="http://localhost/ScheShare/index.php">ScheShare</a></h1>
     <div>
       <p><?= $userId ?>さんログイン中</p>
-      <p><a href="">ログアウト</a></p>
+      <p><a href="login.php">ログアウト</a></p>
     </div>
   </header>
 
@@ -489,6 +498,7 @@ var_dump($_POST);
 
 
         <div class="emp-list">
+          <input type="hidden" name="checked_emp[]" value="<?= $userId ?>">
           <ul>
             <?php foreach ($empList as $emp) : ?>
               <li class="emp-item id-<?= $emp['emp_id'] ?>" style="display:none;">
