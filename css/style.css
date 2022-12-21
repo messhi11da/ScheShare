@@ -73,6 +73,11 @@ header{
   font-weight: bold;
 }
 
+.diff-month{
+  opacity: 0.5;
+}
+
+
 /* スケジュール表 */
 #schedule-wrapper{
   width: 80%;
@@ -93,12 +98,24 @@ header{
 
 .emp-profile{
   flex-basis: 10%;
-  border: solid;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border: 2px solid #CCCCCC;
 }
 .schedule-table{
   flex-basis: 90%;
   table-layout:fixed;
   min-height:200px;
+}
+.schedule-item{
+  list-style: none;
+  line-height: 1.1;
+  padding: 5px;
+  background-color: #FFFFCC;
+  border: 2px solid #CCCCCC;
+
 }
 
 /* 空き時間表示テーブル */

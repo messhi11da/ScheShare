@@ -1,7 +1,7 @@
 <?php
 require_once(dirname(__FILE__) . '/function.php');
 session_start();
-$_SESSION['user_id'] = "";
+$_SESSION = array();
 
 $deptList = selectDept(); // 部署リストを取得
 

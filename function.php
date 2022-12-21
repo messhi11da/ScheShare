@@ -1,15 +1,5 @@
 <?php
-$dsn = "mysql:host=localhost;dbname=scheshare;charset=utf8mb4";
-$user = "root";
-$password = "root";
-
-try {
-  $dbh = new PDO($dsn, $user, $password);
-  $dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch (PDOException $e) {
-  echo 'DB接続エラー: ' . $e->getMessage();
-  exit;
-}
+require_once(dirname(__FILE__) . '/db_connect.php');
 
 function createCalendar($m, $y)
 {
@@ -29,6 +19,8 @@ function createCalendar($m, $y)
     $dateArray[] = $startDate->format('Y-m-d');
     $startDate->modify('+1 day');
   }
+  var_dump($firstOffset);
+  var_dump($lastOffset);
   return  $dateArray;
 }
 
@@ -173,12 +165,13 @@ function selectDept()
 }
 
 
-function selectSchedule($empId, $week, $startTime)
+function selectWeekSchedule($empId, $week, $startTime)
 {
   global $dbh;
   $flag = 0;
   foreach ($week as $date) {
-    $sql = "SELECT * FROM schedule WHERE (emp_id = ? OR attendees_id LIKE ?) AND date = ? AND start_time >= ? AND start_time < ? ORDER BY start_time ASC";
+    $sql = "SELECT id, date, title, memo, attendees_id, TIME_FORMAT(start_time, '%k:%i') AS start_time, TIME_FORMAT(end_time, '%k:%i') AS end_time FROM schedule WHERE (emp_id = ? OR attendees_id LIKE ?) AND date = ? AND start_time >= ? AND start_time < ? ORDER BY start_time ASC";
+    //$sql = "SELECT * FROM schedule WHERE (emp_id = ? OR attendees_id LIKE ?) AND date = ? AND start_time >= ? AND start_time < ? ORDER BY start_time ASC";
     $stmt = $dbh->prepare($sql);
     $stmt->bindValue(1, $empId);
     $stmt->bindValue(2, '%|' . $empId.'%');
@@ -192,16 +185,26 @@ function selectSchedule($empId, $week, $startTime)
   
     if (!empty($res)) $flag = 1;
   }
-  //exit;
+ // var_dump($scheduleList);
+ // exit;
   return $flag === 1 ? $scheduleList : 0;
+}
+
+function selectSchedule($scheduleId){
+  global $dbh;
+  $sql = "SELECT id, date, title, memo, attendees_id, TIME_FORMAT(start_time, '%k:%i') AS start_time, TIME_FORMAT(end_time, '%k:%i') AS end_time FROM schedule WHERE id = ?";
+  $stmt = $dbh -> prepare($sql);
+  $stmt -> bindValue(1, $scheduleId);
+  $stmt -> execute();
+  return $stmt -> fetch(PDO::FETCH_ASSOC);
 }
 
 
 
-function calcFreeTime($displayEmpList, $week,  $interval)
+function calcFreeTime($displayEmpList, $week)
 {
   global $dbh;
-
+  $interval = 0.25; // 0.25h間隔で計算
   for ($i = 0; $i < 24; $i += $interval) {
     foreach ($week as $key1 => $date) {
       $flag = 0;
@@ -211,7 +214,7 @@ function calcFreeTime($displayEmpList, $week,  $interval)
 
         $stmt = $dbh->prepare($sql);
         $stmt->bindValue(1, $displayEmp['emp_id']);
-        $stmt->bindValue(2, '%X' . $displayEmp['emp_id']);
+        $stmt->bindValue(2, '%|' . $displayEmp['emp_id']);
         $stmt->bindValue(3, $date);
         $stmt->bindValue(4, getTimeFormat($i + $interval));
         $stmt->bindValue(5, getTimeFormat($i));
