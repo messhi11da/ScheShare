@@ -33,7 +33,7 @@ header{
 }
 
 /* 社員検索エリア */
-#search-area{
+.search-area{
   position: relative;
   flex-basis: 20%;
   height: 250px;

@@ -1,10 +1,22 @@
 <?php
 require_once(dirname(__FILE__) . '/db_connect.php');
+require_once(dirname(__FILE__) . '/function.php');
 session_start();
 
 if (isset($_POST['dept_id'], $_POST['keyword'])) {
     $deptId = $_POST['dept_id'];
     $keyword = $_POST['keyword'];
+    $checkedId = $_POST['checked_id'];
+
+    if($checkedId === "display_emp"){
+        $checkedList = $_SESSION[$checkedId];
+    }elseif(!empty($checkedId)){
+        $schedule = selectSchedule($checkedId);
+        $checkedList = fetchAttendeeList($schedule['attendees_id']);
+    }else{
+        $checkedList = "0";
+    }
+   // echo var_dump($checkedList);
 
     try {
         global $dbh;
@@ -33,17 +45,32 @@ if (isset($_POST['dept_id'], $_POST['keyword'])) {
         echo "エラー:" . $e->getMessage();
         exit();
     }
-    echo var_dump($_SESSION);
+  //  echo var_dump($_SESSION);
     echo "検索結果：".count($empList)."件";
     echo "<br>";
         echo "<table>";
         foreach($empList as $emp){
+            if($emp['emp_id'] === $_SESSION['user_id']) continue;
             echo "<tr>";
             echo "<td>".$emp["emp_id"]."</td>";
             echo "<td>".$emp["dept_name"]."</td>";
             echo "<td>".$emp["emp_name"]."</td>";
-          //  echo "<td><input class='input-check' type='checkbox' name='checked_emp[]' value='".$emp['emp_id']."' <?= in_array($emp['emp_name'], $_SESSION['display_emp']) ? "checked" : ""
+            echo "<td><input class='input-check' type='checkbox' name='checked_emp[]' value='".$emp['emp_id']."' ".isChecked($emp['emp_id'], $checkedList)."></td>";
             echo "</tr>";
         }
         echo "</table>";
 }
+
+function isChecked($empId, $checkedList){
+   // echo var_dump($checkedList);
+   if($checkedList === "0") return "";
+   $checkedFlag = 0;
+    foreach($checkedList as $checkedEmp){
+        if($checkedEmp['emp_id'] === $empId){
+            $checkedFlag = 1;
+        }
+    }
+    return $checkedFlag === 1 ? "checked" : "";
+}
+
+?>

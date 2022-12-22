@@ -111,32 +111,6 @@ function deleteSchedule($scheduleId)
 }
 
 
-function searchEmp($keyword, $deptId)
-{
-  global $dbh;
-  $sql = "SELECT emp_id, emp_name, dept_id, dept_name FROM emp LEFT OUTER JOIN dept ON emp.dept_id = dept.dept_id WHERE ";
-
-  $keywordArray = preg_split('/( |　)/', $keyword);
-  //var_dump($keywordArray);
-  for ($i = 0; $i < count($keywordArray); $i++) {
-    $placeholder[] = "(emp_id LIKE ? OR emp_name LIKE ? OR dept_name LIKE ?)";
-  }
-  $sql .= "( " . implode(' AND ', $placeholder) . " )";
-
-  if (!empty($deptId)) $sql .= " AND dept.dept_id = ?";
-  $sql .= " ORDER BY emp_id ASC";
-  $stmt = $dbh->prepare($sql);
-  foreach ($keywordArray as $key => $keyword) {
-    $stmt->bindValue(3 * $key + 1, "%$keyword%");
-    $stmt->bindValue(3 * $key + 2, "%$keyword%");
-    $stmt->bindValue(3 * $key + 3, "%$keyword%");
-  }
-
-  if (!empty($deptId)) $stmt->bindValue(3 * $key + 4, $deptId);
-  $stmt->execute();
-  return $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
-
 function selectAllEmp()
 {
   global $dbh;
@@ -192,13 +166,23 @@ function selectWeekSchedule($empId, $week, $startTime)
 
 function selectSchedule($scheduleId){
   global $dbh;
-  $sql = "SELECT id, date, title, memo, attendees_id, TIME_FORMAT(start_time, '%k:%i') AS start_time, TIME_FORMAT(end_time, '%k:%i') AS end_time FROM schedule WHERE id = ?";
-  $stmt = $dbh -> prepare($sql);
-  $stmt -> bindValue(1, $scheduleId);
-  $stmt -> execute();
-  return $stmt -> fetch(PDO::FETCH_ASSOC);
+
+  $sql = "SELECT *, TIME_FORMAT(start_time, '%k:%i') AS start_time2, TIME_FORMAT(end_time, '%k:%i') AS end_time2 FROM schedule WHERE id = ?";
+  $stmt = $dbh->prepare($sql);
+  $stmt->bindValue(1, $scheduleId);
+  $stmt->execute();
+  return $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
+// 文字列情報から参加者の情報を抜き出す
+function fetchAttendeeList($attendeeIdList)
+{
+    $attendeeIdArray = explode('|', $attendeeIdList);
+    foreach ($attendeeIdArray as $attendeeId) {
+        $attendeeList[] = selectEmp($attendeeId);
+    }
+    return $attendeeList;
+}
 
 
 function calcFreeTime($displayEmpList, $week)
@@ -272,15 +256,6 @@ function getTimeFormat($time)
   return substr('00' . $hour, -2) . ":" . substr('00' . $minute, -2);
 }
 
-function fetchAttendees($attendeesId)
-{
-  $attendeesIdList = explode('|', $attendeesId);
-  //var_dump($attendeesIdList);
-  foreach ($attendeesIdList as $attendeeId) {
-    $attendees[] = selectEmp($attendeeId);
-  }
-  return $attendees;
-}
 
 
 /* ログイン関係 */

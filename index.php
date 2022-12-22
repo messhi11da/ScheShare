@@ -18,7 +18,7 @@ if (!isset($_SESSION['display_emp']) || $_SESSION['display_emp'] === "" || !in_a
   $_SESSION['display_emp'][] = $user;
 }
 
-var_dump($_SESSION['display_emp']);
+//var_dump($_SESSION['display_emp']);
 
 // 表示するカレンダーの年月情報を取得
 if (isset($_GET['date'])) {
@@ -32,20 +32,6 @@ $dateArray = createCalendar($m, $y);  // 指定した年月の一ヶ月の情報
 $week = getWeek($date, $dateArray); // 指定した日付を含む週の一週間の情報を取得
 
 
-
-
-
-$empList = selectAllEmp(); // 全社員の情報を取得
-$empDataList = json_encode($empList);
-
-if (isset($_POST['submit_search'])) {
-  $keyword = escape($_POST['keyword']);
-  $selectedDeptId = $_POST['dept_id'];
-  var_dump($selectedDeptId);
-
-  var_dump($_POST['dept_id']);
-  $searchedEmpList = searchEmp($keyword, $selectedDeptId);
-}
 
 
 $selectedDeptId = '0'; // ?
@@ -63,6 +49,8 @@ if (isset($_POST['submit_display'])) {
 
 // 新規スケジュール登録
 if (isset($_POST['submit_add'])) {
+  var_dump($_POST);
+  //exit;
   insertSchedule($userId, $_POST['date'], $_POST['start'], $_POST['end'], $_POST['title'], $_POST['memo'], $_POST['checked_emp']);
   header("Location:http://localhost/ScheShare/index.php?date=" . $date);
   exit();
@@ -78,6 +66,8 @@ if (isset($_POST['submit_update'])) {
 // スケジュール削除
 if (isset($_POST['submit_delete'])) {
   deleteSchedule($_POST['schedule_id']);
+  var_dump($_POST);
+  exit;
   header("Location:http://localhost/ScheShare/index.php?date=" . $date);
   exit;
 }
@@ -115,7 +105,7 @@ $jsonDisplay = json_encode($jsonDisplay);
 
   <div id="top-wrapper">
     <!-- 社員検索画面エリア -->
-    <form id="search-area" action="" method="post">
+    <form class="search-area" action="" method="post">
       <select class="select-dept">
         <option class="dept-option" value="0">全部署</option>
         <?php foreach ($deptList as $dept) : ?>
@@ -124,28 +114,13 @@ $jsonDisplay = json_encode($jsonDisplay);
       </select>
       <br>
       <input class="input-keyword" width="" type="text" placeholder="（例) 社員番号,名前,部署名">
-      <button class="search-btn" type="submit">検索</button>
+      <button class="search-btn" type="submit" data-id="display_emp">検索</button>
 
 
 
-      <div class="emp-list">
-
-        <ul>
-          <?php foreach ($empList as $emp) : ?>
-            <li class="emp-item id-<?= $emp['emp_id'] ?>" style="display:none;">
-              <label>
-                <?= $emp['emp_id'] ?>/
-                <?= $emp['dept_name'] ?>/
-                <?= $emp['emp_name'] ?>
-
-                <input class="input-check" type="checkbox" name="checked_emp[]" value="<?= $emp['emp_id'] ?>" <?= in_array($emp['emp_name'], $_SESSION['display_emp']) ? "checked" : "" ?>>
-
-              </label>
-            </li>
-
-          <?php endforeach; ?>
-        </ul>
-
+      <div class="search-result" style="display: none;">
+        <div class="emp-list" style="display: none;">
+        </div>
         <button class="display-btn" type="submit" name="submit_display" value="1">スケジュールを表示</button>
       </div>
     </form>
@@ -202,8 +177,6 @@ $jsonDisplay = json_encode($jsonDisplay);
 
     <?php
     if (!empty($_SESSION['display_emp'])) :
-      $jsonSchedule = [];
-      $jsonIndex = 0;
       foreach ($_SESSION['display_emp'] as $key => $displayEmp) :
     ?>
         <div class="schedule-container">
@@ -233,7 +206,6 @@ $jsonDisplay = json_encode($jsonDisplay);
 
             <?php
             $scheduleFlag = 0; // スケジュール検出用フラグ
-
             for ($startTime = 0; $startTime < 24; $startTime++) :
               $scheduleList = selectWeekSchedule($displayEmp['emp_id'], $week, $startTime);
 
@@ -248,110 +220,70 @@ $jsonDisplay = json_encode($jsonDisplay);
                       <?php if (!empty($scheduleList[$day4])) : ?>
                         <ul style="min-height:40px;">
                           <?php foreach ($scheduleList[$day4] as $schedule) : ?>
-                            <?php $jsonSchedule[] = $schedule;
-                            ?>
-
-                            <li class="schedule-item" data-id="<?= $schedule['schedule_id'] ?>">
+                            <li class="schedule-item" data-id="<?= $schedule['id'] ?>">
                               <?= $schedule['start_time'] ?>~
                               <?= $schedule['end_time'] ?>
                               <?= $schedule['title'] ?>
                             </li>
 
-                            <!-- スケジュール詳細画面 -->
-                            <div class="schedule-desc display-elem" style="display: none;">
-                              <div class="display-header">
-                                <h4>スケジュール詳細</h4>
-                                <div>
-                                  <button class="edit-btn" type="button" data-id="<?= $schedule['id'] ?>">編集</button>
-                                  <button class="close-btn" type="button" value="invalid">×</button>
-                                </div>
-                              </div>
-                              
-                              <table>
+        </div>
 
-                              </table>
-                              <p class="schedule-datetime">
-                                <?php list($y, $m, $d) = explode('-', $schedule['date']); ?>
-                                <?= $y ?>/<?= $m ?>/<?= $d ?>/(<?= getWeekName($day4); ?>)
-                                <?= $schedule['start_time'] ?>~
-                                <?= $schedule['end_time'] ?>
-                              </p>
-                              <p><?= $schedule['title'] ?></p>
-                              <p>
-                                説明：<br>
-                                <?= $schedule['memo'] ?>
-                              </p>
-                              <p>
-                                参加者：
-                              <ul>
-                                <?php
-                                $attendees = fetchAttendees($schedule['attendees_id']);
-                                foreach ($attendees as $attendee) :
-                                ?>
-                                  <li>
-                                    <?= $attendee["emp_name"] . "(" . $attendee['emp_id'] . ")" ?>
-                                  </li>
-                                <?php endforeach; ?>
-                              </ul>
-                              </p>
-                            </div>
+      <?php endforeach; ?>
+      </ul>
+    <?php endif; ?>
+    </td>
 
-                            <?php $jsonIndex++; ?>
-                          <?php endforeach; ?>
-                        </ul>
-                      <?php endif; ?>
-                    </td>
-
-                  <?php endforeach; ?>
-                </tr>
-            <?php endif;
+  <?php endforeach; ?>
+  </tr>
+<?php
+              endif;
 
             endfor; ?>
-            <!-- 一週間の予定が何もないとき -->
-            <?php if ($scheduleFlag === 0) : ?>
-              <tr>
-                <?php for ($day6 = 0; $day6 < 7; $day6++) : ?>
-                  <td bgcolor="<?= ($day6) % 2 != 1 ? "#FFFFFF" : "#EEEEEE" ?>"></td>
-                <?php endfor; ?>
-              </tr>
-            <?php endif; ?>
-          </table>
-        </div>
-      <?php endforeach; ?>
-      <?php //var_dump($json); 
-      $scheduleDataList = json_encode($jsonSchedule);
-      ?>
+<!-- 一週間の予定が何もないとき -->
+<?php if ($scheduleFlag === 0) : ?>
+  <tr>
+    <?php for ($day6 = 0; $day6 < 7; $day6++) : ?>
+      <td bgcolor="<?= ($day6) % 2 != 1 ? "#FFFFFF" : "#EEEEEE" ?>"></td>
+    <?php endfor; ?>
+  </tr>
+<?php endif; ?>
+</table>
   </div>
+<?php endforeach; ?>
+<?php //var_dump($json); 
+      $scheduleDataList = json_encode($jsonSchedule);
+?>
+</div>
 
 
-  <!-- 空き時間表示テーブル -->
+<!-- 空き時間表示テーブル -->
 
-  <?php
+<?php
       list($freeTimeList, $max) = calcFreeTime($_SESSION['display_emp'], $week);
-  ?>
+?>
 
-  <div id="free-time-table" class="display-elem" style="display: none;">
-    <div class="display-header">
-      <?php if (!empty($_SESSION['display_emp'])) : ?>
-        <?php foreach ($_SESSION['display_emp'] as $displayEmp) : ?>
-          <?= $displayEmp['emp_name'] . "(" . $displayEmp['emp_id'] . ")さん " ?>
-        <?php endforeach; ?>
-        の空いてる時間帯
-      <?php endif; ?>
+<div id="free-time-table" class="display-elem" style="display: none;">
+  <div class="display-header">
+    <?php if (!empty($_SESSION['display_emp'])) : ?>
+      <?php foreach ($_SESSION['display_emp'] as $displayEmp) : ?>
+        <?= $displayEmp['emp_name'] . "(" . $displayEmp['emp_id'] . ")さん " ?>
+      <?php endforeach; ?>
+      の空いてる時間帯
+    <?php endif; ?>
 
-      <button class="close-btn" type="button">×</button>
-    </div>
-    <table border="1" bgcolor="#FFFFFF" width="700">
-      <tr>
+    <button class="close-btn" type="button">×</button>
+  </div>
+  <table border="1" bgcolor="#FFFFFF" width="700">
+    <tr>
 
-        <?php foreach ($week as $day5 => $date3) : ?>
-          <?php list($y, $m, $d) = explode('-', $date3); ?>
-          <th><?= "$m/" . (int)$d . "(" . getWeekName($day5) . ")" ?></th>
-        <?php endforeach; ?>
+      <?php foreach ($week as $day5 => $date3) : ?>
+        <?php list($y, $m, $d) = explode('-', $date3); ?>
+        <th><?= "$m/" . (int)$d . "(" . getWeekName($day5) . ")" ?></th>
+      <?php endforeach; ?>
 
-      </tr>
+    </tr>
 
-      <?php
+    <?php
 
       $j = 0;
       for ($k = 0; $k < $max; $k++) :
@@ -363,181 +295,267 @@ $jsonDisplay = json_encode($jsonDisplay);
         endfor;
 
         if ($flag === 1) :
-      ?>
-          <tr>
-            <?php
-            foreach ($week as $key => $date) :
-            ?>
-              <td>
-                <?php if (isset($freeTimeList[$key][$j])) : ?>
+    ?>
+        <tr>
+          <?php
+          foreach ($week as $key => $date) :
+          ?>
+            <td>
+              <?php if (isset($freeTimeList[$key][$j])) : ?>
 
-                  <?= $freeTimeList[$key][$j] ?>
+                <?= $freeTimeList[$key][$j] ?>
 
-                <?php endif; ?>
-              </td>
+              <?php endif; ?>
+            </td>
 
-            <?php endforeach; ?>
-          </tr>
+          <?php endforeach; ?>
+        </tr>
 
 
-      <?php endif;
+    <?php endif;
         $j++;
       endfor; ?>
 
-    </table>
+  </table>
 
-  </div>
+</div>
 <?php endif; ?>
 
 
-<!-- スケジュールの新規追加・編集フォーム  -->
 
-<form id="add-form" class="display-elem" action="" method="post" style="display: none;">
-  <div class="form-wrapper">
-    <div class="main-form">
-      <div class="display-header">
-        <h4 class="form-title">新規スケジュール登録</h4>
+<!-- スケジュール詳細画面 -->
+<div class="schedule-desc display-elem" style="display: none;">
+  <div class="display-header">
+    <h4>スケジュール詳細</h4>
+    <button class="close-btn" type="button" value="invalid">×</button>
 
-        <button class="delete-btn" type="submit" name="submit_delete" value="1" style="display:none;">削除</button>
-        <button class="close-btn" type="button">×</button>
-      </div>
-      <input class="input-title" id="title" type="text" name="title" placeholder="タイトルを追加">
-      <br>
-      日時：
-      <input class="input-date" type="date" name="date" value="<?= $date ?>">
-      <br>
-      時刻：
-      <input class="input-starttime" id="begin" type="time" name="start">
-      <span>～</span>
-      <input class="input-endtime" id="end" type="time" name="end">
-      <br>
-      説明：
-      <textarea class="input-memo" name="memo" placeholder="説明"></textarea>
-      <br>
-      参加者：
-      <ul class="attendees-list">
-        <li class="attendees-item"><?= $user['emp_name'] . "(" . $user['emp_id'] . ")" ?></li>
-      </ul>
+  </div>
 
+  <table class="detail-table">
+  </table>
+  <button class="edit-btn" type="button" data-id="">編集</button>
+</div>
 
-      <input class="input-schedule-id" type="hidden" name="schedule_id" value="">
-      <button class="add-btn" type="submit" name="submit_add" value="1">登録</button>
-    </div>
+<!-- スケジュール新規登録＆編集用のフォーム -->
+<form id="form" class="display-elem" action="" method="post" style="display: none;">
+  <div class="display-header">
+    <h4 class="form-title">スケジュール編集画面</h4>
+    <button class="close-btn" type="button">×</button>
+  </div>
+  <div style="display: flex;">
+    <div>
 
+      <table class="input-table">
+      </table>
 
-    <div class="sub-form">
-      <p>参加者を追加</p>
-
-      <div>
-
-        <select class="select-dept">
-          <option class="dept-option" value="0">全部署</option>
-          <?php foreach ($deptList as $dept) : ?>
-            <option class="dept-option" value="<?= $dept['dept_id'] ?>"><?= $dept['dept_name'] ?></option>
-          <?php endforeach; ?>
-        </select>
-        <input class="input-keyword" type="text">
-        <button class="search-btn" type="submit">検索</button>
-
-
-        <div class="emp-list">
-          <input type="hidden" name="checked_emp[]" value="<?= $userId ?>">
-          <ul>
-            <?php foreach ($empList as $emp) : ?>
-              <li class="emp-item id-<?= $emp['emp_id'] ?>" style="display:none;">
-                <label>
-                  <?= $emp['emp_id'] ?>/
-                  <?= $emp['dept_name'] ?>/
-                  <?= $emp['emp_name'] ?>
-                  <input class="input-attend-check" type="checkbox" name="checked_emp[]" data-name="<?= $emp['emp_name'] ?>" value="<?= $emp['emp_id'] ?>" <?= $emp['emp_id'] === $userId ? "checked disabled" : "" ?>>
-                </label>
-              </li>
-            <?php endforeach; ?>
-          </ul>
-        </div>
-
-      </div>
-
+      <input type="hidden" name="checked_emp[]" value="<?= $user['emp_id'] ?>">
+      <button class="submit-btn" type="submit" name="submit_edit" value="1">更新</button>
+      <a class="edit-attendee-btn" href="" data-id="">参加者を編集</a>
+      <button class="delete-btn" type="submit" name="submit_delete" value="1" style="display: none;">削除</button>
     </div>
   </div>
+  
+    <!-- 検索フォーム -->
+    <div class="search-area2" style="display: none;">
+      <select class="select-dept">
+        <option class="dept-option" value="0">全部署</option>
+        <?php foreach ($deptList as $dept) : ?>
+          <option class="dept-option" value="<?= $dept['dept_id'] ?>"><?= $dept['dept_name'] ?></option>
+        <?php endforeach; ?>
+      </select>
+      <br>
+      <input class="input-keyword" width="" type="text" placeholder="（例) 社員番号,名前,部署名">
+      <button class="search-btn" type="submit" data-checked="0">検索</button>
+  
+      <div class="emp-list" style="display: none;">
+      </div>
+    </div>
+
 </form>
-
 </body>
-
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
 <script>
-  // var scheduleForm = document.getElementById('schedule-form');
+
+
+
+  
+
+
+  $(function() {
+
+    // 検索結果
+    var $searchBtn = $(".search-btn");
+    console.log($searchBtn);
+    $searchBtn.on("click", function(e) {
+      e.preventDefault();
+      var keyword = $(this).parent().find(".input-keyword").val();
+      var deptId = $(this).parent().find(".select-dept").val();
+      var $empTable = $(this).parent().find(".emp-list");
+      var $searchRes = $(this).parent().find(".search-result");
+      console.log(keyword);
+      console.log(deptId);
+      var array = $(this).data("checked");
+      console.log(array);
+      var checkedId = $(this).data("id");
+      $.ajax({
+        type: "POST",
+        url: "ajax.php",
+        data: {
+          "dept_id": deptId,
+          "keyword": keyword,
+          "checked_id": checkedId
+        }
+      }).done(function(data) {
+        console.log("success");
+        console.log(data);
+        console.log($empTable);
+        $empTable.html(data);
+        $empTable.css("display", "block");
+        $searchRes.css("display", "block");
+      }).fail(function() {
+
+      });
+
+    });
+
+    // スケジュール詳細画面の表示
+    var $scheduleItem = $(".schedule-item");
+    var $editBtn = $(".edit-btn");
+    var $detailTable = $(".detail-table");
+    var $scheduleDisplay = $(".schedule-desc");
+    var $form = $("#form");
+
+    var $searchArea = $(".search-area2");
+
+
+    $scheduleItem.on("click", function() {
+      console.log($(this).parent().find(".schedule-info"));
+      var scheduleId = $(this).data("id");
+      var $scheduleInfo = $(this).parent().find(".detail-table");
+      $.ajax({
+        type: "POST",
+        url: "ajax2.php",
+        data: {
+          "schedule_id": scheduleId,
+          "edit_flag": "0"
+        }
+      }).done(function(data) {
+        console.log($editBtn.data());
+        $editBtn.data("id", scheduleId);
+        $detailTable.html(data);
+        $form.css("display", "none");
+        $scheduleDisplay.css("display", "block");
+
+      }).fail(function() {
+
+      });
+    });
+
+    // スケジュール編集フォームの表示
+    var $inputTable = $(".input-table");
+    var $delBtn = $(".delete-btn");
+    var $editAttendeeBtn = $(".edit-attendee-btn");
+
+    $editBtn.on("click", function() {
+      var scheduleId = $(this).data("id");
+      
+      $.ajax({
+        type: "POST",
+        url: "ajax2.php",
+        data: {
+          "schedule_id": scheduleId,
+          "edit_flag": "1"
+        }
+      }).done(function(data) {
+        $inputTable.html(data);
+        $editAttendeeBtn.data("id", scheduleId);
+        $scheduleDisplay.css("display", "none");
+        $searchArea.css("display", "none");
+        $delBtn.css("display", "block");
+        $form.css("display", "block");
+      }).fail(function() {
+
+      });
+    });
+
+    // 新規スケジュール登録フォーム表示
+    var $addBtn = $("#add-btn");
+    var $formTitle = $form.find(".form-title");
+    var $formSubmitBtn = $form.find(".submit-btn");
+    $addBtn.on("click", function() {
+      $.ajax({
+        type: "POST",
+        url: "ajax2.php",
+        data: {
+          "schedule_id": "0",
+          "edit_flag": "0"
+        }
+      }).done(function(data) {
+        $inputTable.html(data);
+        $scheduleDisplay.css("display", "none");
+        $delBtn.css("display", "none");
+        $searchArea.css("display", "none");
+        $formTitle.text("新規スケジュール登録");
+        $formSubmitBtn.text("登録");
+        $formSubmitBtn.attr("name", "submit_add");
+        $form.css("display", "block");
+      }).fail(function() {
+      });
+    });
+
+    // 新規登録・編集フォーム用の検索画面の表示
+
+    $editAttendeeBtn.on("click", function(e) {
+      e.preventDefault();
+      console.log($searchArea);
+      var scheduleId = $editAttendeeBtn.data("id");
+      var $searchBtn = $form.find(".search-btn");
+      $searchBtn.data("checked", scheduleId);
+      $(this).parent().parent().append($searchArea);
+      $searchArea.css("display", "block");
+    });
+
+    //
+
+    // ×ボタンを押すとクローズ
+    var $closeBtn = $(".close-btn");
+    $closeBtn.on("click", function() {
+      var $displayElem = $(this).parent().parent();
+      $displayElem.css("display", "none");
+    })
+  });
+
+
+  //var displayElem = document.getElementById('display-elem');
+
+
+
+/*
+  var inputCheckList = document.querySelectorAll('.input-attend-check');
+  for (var inputCheck of inputCheckList) {
+    inputCheck.addEventListener('change', function() {
+      if (this.checked) {
+
+      }
+    });
+
+  }
+
+
+    
   var inputStartTime = document.querySelector('.input-starttime');
   var inputEndTime = document.querySelector('.input-endtime');
 
-  var scheduleItemList = document.querySelectorAll('.schedule-item');
-  var scheduleDescList = document.querySelectorAll('.schedule-desc');
-
-  var addBtn = document.getElementById('add-btn');
 
   var addForm = document.getElementById('add-form');
-  var addCloseBtn = addForm.querySelector('.close-btn');
 
-  var empDataList = <?= $empDataList ?>;
-  var scheduleDataList = <?= $scheduleDataList ?>;
-
-  // エンターキーでのフォーム送信を無効
+    // エンターキーでのフォーム送信を無効
   function noEnter(event) {
     if (event.keyCode === 13) {
       console.log('yy');
       event.preventDefault();
     }
-  }
-
-  // 入力ワードで絞り込み（社員番号、部署名、名前）
-  function sortInput(event) {
-    var empList = this.parentElement.querySelector('.emp-list');
-    var selectDept = this.parentElement.querySelector('.select-dept');
-    console.log(this.value);
-    console.log(empList);
-
-
-
-    empList.style.display = "none";
-    if (this.value != "") {
-      for (var empData of empDataList) {
-        var empItem = empList.querySelector(".id-" + empData['emp_id']);
-        var inputCheckEmp = empItem.querySelector(".input-check");
-        console.log(inputCheckEmp);
-
-        empItem.style.display = "none";
-
-        if (empData['emp_id'].indexOf(this.value) != -1 ||
-          empData['emp_name'].indexOf(this.value) != -1 ||
-          empData['dept_name'].indexOf(this.value) != -1) {
-          empList.style.display = "block";
-          empItem.style.display = "block";
-          console.log(empList);
-          console.log('yes!!');
-        }
-        if (selectDept.value > 0 && selectDept.value != empData['dept_id']) {
-
-          empItem.style.display = "none";
-        }
-      }
-    }
-
-
-
-  }
-  // 部署名の選択肢で絞り込み
-  function sortSelect(event) {
-    for (var empData of empDataList) {
-      var empList = this.parentElement.querySelector('.emp-list');
-      var empItem = empList.querySelector(".id-" + empData['emp_id']);
-      console.log(empList);
-      if (this.value > 0 && this.value != empData['dept_id']) {
-        console.log(empData['dept_id']);
-        empItem.style.display = "none";
-      }
-    }
-
   }
 
   // チェックした社員を参加者一覧に表示する
@@ -554,216 +572,11 @@ $jsonDisplay = json_encode($jsonDisplay);
     }
   }
 
-  // 絞り込み検索
-
-
-  /*
-  var inputKeywordList = document.querySelectorAll('.input-keyword');
-  console.log(inputKeywordList);
-  for (var inputKeyword of inputKeywordList) {
-    inputKeyword.addEventListener('input', sortInput);
-    inputKeyword.addEventListener('keydown', noEnter);
-  }
-
-  var selectDeptList = document.querySelectorAll('.select-dept');
-  for (var selectDept of selectDeptList) {
-    selectDept.addEventListener('change', sortSelect);
-  }
-
-  var empListList = document.querySelectorAll('.emp-list');
-  for (var empList of empListList) {
-    empList
-  }
-
-*/
-
-  // スケジュールを押すと詳細表示
-  
-  scheduleItemList.forEach(function(scheduleItem, index) {
-
-    var scheduleDesc = scheduleItem.parentElement.querySelector(".schedule-desc");
-
-    var closeBtn = scheduleDesc.querySelector('.close-btn');
-    var editBtn = scheduleDesc.querySelector('.edit-btn');
-    //var attendeesList = scheduleDesc.querySelector('.attendees-list')
-    var x, y;
-
-    //console.log(attendeesList);
-
-    scheduleItem.addEventListener('click', function(event) {
-
-      // 詳細画面を開く  
-      if (displayElem.value === 'enable') {
-        displayElem.value = 'disable';
-
-        scheduleDesc.style.display = 'block';
-      }
-    });
-
-    // 詳細画面を閉じる
-    closeBtn.addEventListener('click', function() {
-      displayElem.value = "enable";
-      scheduleDesc.style.display = "none";
-    });
-
-
-
-
-
-
-
-
-    editBtn.addEventListener('click', function() {
-      displayElem.value = "disable";
-      scheduleDesc.style.display = "none";
-
-      // 新規登録画面から編集画面のクローンを作成 & 表示
-      var scheduleData = scheduleDataList[index];
-      var editForm = addForm.cloneNode(true);
-      var closeBtn = editForm.querySelector('.close-btn');
-
-      var formTitle = editForm.querySelector('.form-title');
-      var delBtn = editForm.querySelector('.delete-btn');
-      var updateBtn = editForm.querySelector('.add-btn');
-      var inputTitle = editForm.querySelector('.input-title');
-      var inputDate = editForm.querySelector('.input-date');
-      var inputStartTime = editForm.querySelector('.input-starttime');
-      var inputEndTime = editForm.querySelector('.input-endtime');
-      var inputMemo = editForm.querySelector('.input-memo');
-      var inputScheduleId = editForm.querySelector('.input-schedule-id');
-      var inputCheckList = editForm.querySelectorAll(".input-attend-check");
-      var inputKeyword = editForm.querySelector('.input-keyword');
-      var selectDept = editForm.querySelector('.select-dept');
-      var attendeesList = editForm.querySelector(".attendees-list");
-
-      // var addAttendeesBtn = editForm.querySelector(".add-attendees-btn");
-
-      console.log(scheduleData);
-
-      formTitle.textContent = "スケジュール編集";
-      delBtn.style.display = "block";
-      inputTitle.setAttribute('value', scheduleData['title']);
-      inputDate.setAttribute('value', scheduleData['date']);
-      inputStartTime.setAttribute('value', scheduleData['start_time']);
-      inputEndTime.setAttribute('value', scheduleData['end_time']);
-      inputMemo.setAttribute('value', scheduleData['memo']);
-      inputScheduleId.setAttribute('value', scheduleData['id']);
-      updateBtn.textContent = "更新";
-      updateBtn.setAttribute('name', 'submit_update');
-
-
-      //  登録されている参加者にチェックを入れる
-      var checkedEmpList = [];
-      if (scheduleData['attendees_id'] != "0") {
-        var attendeesIdList = scheduleData['attendees_id'].split('|');
-        for (var inputCheck of inputCheckList) {
-          //   console.log(inputAttendee.value);
-          for (var attendeeId of attendeesIdList) {
-            if (inputCheck.value === attendeeId) {
-              inputCheck.checked = true;
-              checkedEmpList.push(attendeeId);
-            }
-          }
-        }
-      }
-
-      addAttendees(attendeesList, inputCheckList);
-
-      editForm.style.display = 'block';
-      document.body.appendChild(editForm);
 
       for (var inputCheck of inputCheckList) {
         inputCheck.addEventListener('change', addAttendees.bind(null, attendeesList, inputCheckList));
       }
 
-      /*
-      inputKeyword.addEventListener('input', sortInput);
-      selectDept.addEventListener('change', sortSelect);
-      */
-
-      // 編集画面を閉じる
-      closeBtn.addEventListener('click', function(event) {
-        displayElem.value = "enable";
-        editForm.remove();
-      });
-    });
-    
-
-  });
-
-  
-
-  $(function(){
-
-    var $searchBtn = $(".search-btn");
-    console.log($searchBtn);
-    $searchBtn.on("click", function(e){
-      e.preventDefault();
-      var keyword = $(this).parent().find(".input-keyword").val();
-      var deptId = $(this).parent().find(".select-dept").val();
-      var $empTable = $(this).parent().find(".emp-list");
-      console.log(keyword);
-      console.log(deptId);
-      var array = $(this).data("checked");
-      
-      $.ajax({
-        type: "POST",
-        url: "ajax.php",
-        data: {
-          "dept_id" : deptId,
-          "keyword" : keyword}
-      }).done(function(data){
-        console.log("success");
-        console.log(data);
-        console.log($empTable);
-        $empTable.html(data);
-      }).fail(function(){
-
-      });
-      
-      
-    });
-
-    var $scheduleItem = $(".schedule-item");
-    $scheduleItem.on("click", function(){
-      console.log(this);
-    });
-  });
-
-
-  var displayElem = document.getElementById('display-elem');
-
-
-  // 新規追加ボタンを押すとフォームを表示
-  addBtn.addEventListener('click', function(event) {
-    if (displayElem.value === "enable") {
-      displayElem.value = "disable";
-      addForm.style.display = 'block';
-    }
-  });
-
-  var addAttendeesList = addForm.querySelector(".attendees-list");
-  var addInputCheckList = addForm.querySelectorAll(".input-attend-check");
-  for (var inputCheck of addInputCheckList) {
-    inputCheck.addEventListener("change", addAttendees.bind(null, addAttendeesList, addInputCheckList));
-  }
-
-
-  addCloseBtn.addEventListener('click', function() {
-    displayElem.value = 'enable';
-    addForm.style.display = 'none';
-  });
-
-
-  var inputCheckList = document.querySelectorAll('.input-attend-check');
-  for (var inputCheck of inputCheckList) {
-    inputCheck.addEventListener('change', function() {
-      if (this.checked) {
-
-      }
-    });
-
-  }
 
 
   // スケジュール追加前の入力エラーチェック
@@ -814,6 +627,7 @@ $jsonDisplay = json_encode($jsonDisplay);
     var d = ("00" + date.getDate()).slice(-2);
     return (y + "-" + m + "-" + d);
   }
+  */
 </script>
 
 </body>
