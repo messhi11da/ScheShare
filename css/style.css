@@ -1,27 +1,23 @@
 
 
 
-.schedule-table td > ul{
-  padding-left: 0;
-}
 
 header h1 a, #calendar-area a{
   text-decoration: none;
   color: #000000;
 }
 
-#top-wrapper{
-  display: flex;
-  
-}
 
 header{
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 80px;
+  height: 5rem;
   background-color: #CCFFCC;
   vertical-align: middle;
+}
+header div, header h1{
+  margin: 0 2rem;
 }
 
 #top-wrapper{
@@ -29,19 +25,16 @@ header{
   justify-content: space-around;
   width: 80%;
   margin: 0 auto;
-  background-color: aliceblue;
 }
 
 /* 社員検索エリア */
 .search-area{
   position: relative;
   flex-basis: 20%;
-  height: 250px;
-  width: 300px;
-  margin: 15px auto;
-  border-radius: 10px;
-  border: solid;
-  padding: 10px;
+  margin: 1rem auto;
+  border-radius: 1rem;
+  border: 3px solid #000000;
+  padding: 1rem;
 }
 .display-btn{
   position: absolute;
@@ -49,22 +42,26 @@ header{
   bottom: 0;
   left: 10%;
 }
-.emp-list{
-  height: 80%;
+.emp-table{
+  height: 70%;
   overflow: auto;
+  padding: 0 1rem;
+  background-color: rgb(239, 239, 239);
 }
 
 /* カレンダー */
 #calendar-area{
   flex-basis: 70%;
-  background-color: aqua;
+  padding: 1rem;
 }
 #calendar-area, #calendar-area td{
   text-align: center;  
 }
 #calendar-table{
   width: 90%;
+  height: 80%;
   margin: 0 auto;
+  table-layout: fixed;
 }
 #calendar-table a{
   display: inline-block;
@@ -81,18 +78,21 @@ header{
 /* スケジュール表 */
 #schedule-wrapper{
   width: 80%;
-  margin: 0 auto;
-
+  margin: 1rem auto;
 }
 #schedule-header{
   display: flex;
-  justify-content: right;
+  justify-content: space-between;
+  align-items: center;
 }
-
+#schedule-header button{
+  margin: 0.5rem 1rem;
+  border-radius: 0.5rem;
+}
 .schedule-container{
   display: flex;
   justify-content: space-between;
-  padding: 0 10px;
+  padding: 0 1rem;
 
 }
 
@@ -106,8 +106,13 @@ header{
 }
 .schedule-table{
   flex-basis: 90%;
+  width: 800px;
   table-layout:fixed;
-  min-height:200px;
+  min-height:250px;
+}
+.schedule-table td > ul{
+  padding-left: 0;
+  margin: 0;
 }
 .schedule-item{
   list-style: none;
@@ -117,18 +122,21 @@ header{
   border: 2px solid #CCCCCC;
 
 }
+.schedule-table td{
+  vertical-align: top;
+}
 
-/* 空き時間表示テーブル */
+/* スケジュール詳細画面・フォーム */
 .display-elem{
-  position: absolute;
+  position: fixed;
   top: 50%;
   left: 50%;
   transform: translateY(-50%);
   transform: translateX(-50%);
-  padding: 30px;
-  background-color: #FFFFFF;
-  border: solid;
+  padding: 1.5rem;
+  border: 2px solid #000000;
   border-radius: 10px;
+  background-color: #FFFFFF;
 }
 
 .display-header{
@@ -138,32 +146,19 @@ header{
 }
 
 
-/* 詳細画面関係 */
-.schedule-desc {
-  background-color: white;
-  border: 2px solid black;
-  border-radius: 10px;
-  padding: 0 20px;
+/* ログイン・登録フォーム */
+.login-form{
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border: 3px solid #000000;
+  border-radius: 1rem;
+  padding: 2rem;
 }
-
-.schedule-info .schedule-datetime{
-  font-size: 80%;
+.login-form td{
+  height: 3rem;
 }
-
-
-
-/* フォーム画面 */
-.schedule-form {
-  display: flex;
-  background-color: white;
-  border: 2px solid black;
-  border-radius: 10px;
-  padding: 0 20px;
-}
-.form-header{
-  display: flex;
-}
-.form-wrapper{
-  display: flex;
-  align-items: start;
+.login-form input, .login-form select{
+  border: 1px solid #000000;
 }

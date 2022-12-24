@@ -1,15 +1,15 @@
 <?php
 require_once(dirname(__FILE__) . '/db_connect.php');
 
+
+/* カレンダー作成関係 */
 function createCalendar($m, $y)
 {
-  //  $startDate = calcStartDate($m, $y);
   $startDate = new DateTime(("first day of $y-$m"));
   if ($startDate->format('w') != 0) {
     $firstOffset = $startDate->format('w');
     $startDate->modify("-$firstOffset day");
   }
-  //  $endDate = calcEndDate($m, $y);
   $endDate = new DateTime("last day of $y-$m");
   if ($endDate->format('w') != 6) {
     $lastOffset = 6 - $endDate->format('w');
@@ -19,11 +19,8 @@ function createCalendar($m, $y)
     $dateArray[] = $startDate->format('Y-m-d');
     $startDate->modify('+1 day');
   }
-  var_dump($firstOffset);
-  var_dump($lastOffset);
   return  $dateArray;
 }
-
 
 function getToday()
 {
@@ -39,8 +36,6 @@ function getWeekName($dayNum)
   return $week[$dayNum];
 }
 
-
-
 function getWeek($theDate, $dateArray)
 {
   $dateObj = new DateTime($theDate);
@@ -55,12 +50,11 @@ function getWeek($theDate, $dateArray)
 }
 
 
-
+/* スケジュールテーブル(schedule)のDB処理 */
 function insertSchedule($empId, $date, $startTime, $endTime, $title, $memo, $attendeesIdList)
 {
   global $dbh;
 
-  //exit;
   $sql = "INSERT INTO schedule (emp_id, date, start_time, end_time, title, memo, attendees_id) VALUES (?, ?, ?, ?, ?, ?, ?)";
   $stmt = $dbh->prepare($sql);
   $stmt->bindValue(1, $empId);
@@ -71,97 +65,28 @@ function insertSchedule($empId, $date, $startTime, $endTime, $title, $memo, $att
   $stmt->bindValue(6, $memo);
   $stmt->bindValue(7, implode('|', $attendeesIdList));
   $stmt->execute();
-  var_dump($stmt);
-  //  exit;
- // header("Location:http://localhost/ScheShare/index.php");
- // exit;
 }
 
-function updateSchedule($empId, $date, $startTime, $endTime, $title, $memo, $attendeesIdList, $scheduleId)
+function selectWeekSchedule($empId, $week, $h)
 {
   global $dbh;
-  var_dump($scheduleId);
-  // exit;
-  $sql = "UPDATE schedule SET emp_id = ?, date = ?, start_time = ?, end_time = ?, title = ?, memo = ?, attendees_id = ? WHERE id = ?";
-  $stmt = $dbh->prepare($sql);
-  $stmt->bindValue(1, $empId);
-  $stmt->bindValue(2, $date);
-  $stmt->bindValue(3, $startTime);
-  $stmt->bindValue(4, $endTime);
-  $stmt->bindValue(5, $title);
-  $stmt->bindValue(6, $memo);
-  $stmt->bindValue(7, implode(',', $attendeesIdList));
-  $stmt->bindValue(8, $scheduleId);
-  var_dump($stmt);
-  // exit;
-  $stmt->execute();
-  //header("Location:http://localhost/ScheShare/index.php");
-  //exit;
-}
-
-function deleteSchedule($scheduleId)
-{
-  global $dbh;
-  $sql = "DELETE FROM schedule WHERE id = ?";
-  $stmt = $dbh->prepare($sql);
-  $stmt->bindValue(1, $scheduleId);
-  $stmt->execute();
-  //header("Location:http://localhost/ScheShare/index.php");
-  //exit;
-}
-
-
-function selectAllEmp()
-{
-  global $dbh;
-    $sql = "SELECT emp_id, emp_name, dept_name, emp.dept_id FROM emp LEFT OUTER JOIN dept ON emp.dept_id = dept.dept_id ORDER BY emp_id ASC";
-    $stmt = $dbh->query($sql);
-  return $stmt -> fetchAll(PDO::FETCH_ASSOC);
-}
-
-function selectEmp($empId)
-{
-  global $dbh;
-  $sql = "SELECT emp_id, emp_name, dept_name, password FROM emp LEFT OUTER JOIN dept ON emp.dept_id = dept.dept_id WHERE emp.emp_id = ?";
-  $stmt = $dbh->prepare($sql);
-  $stmt->bindValue(1, $empId);
-  $stmt->execute();
-  return $stmt->fetch(PDO::FETCH_ASSOC);
-}
-
-
-function selectDept()
-{
-  global $dbh;
-  $sql = "SELECT * from dept";
-  $stmt = $dbh->query($sql);
-  return $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
-
-
-function selectWeekSchedule($empId, $week, $startTime)
-{
-  global $dbh;
-  $flag = 0;
+  $scheduleFlag = 0;
   foreach ($week as $date) {
     $sql = "SELECT id, date, title, memo, attendees_id, TIME_FORMAT(start_time, '%k:%i') AS start_time, TIME_FORMAT(end_time, '%k:%i') AS end_time FROM schedule WHERE (emp_id = ? OR attendees_id LIKE ?) AND date = ? AND start_time >= ? AND start_time < ? ORDER BY start_time ASC";
-    //$sql = "SELECT * FROM schedule WHERE (emp_id = ? OR attendees_id LIKE ?) AND date = ? AND start_time >= ? AND start_time < ? ORDER BY start_time ASC";
     $stmt = $dbh->prepare($sql);
     $stmt->bindValue(1, $empId);
     $stmt->bindValue(2, '%|' . $empId.'%');
     $stmt->bindValue(3, $date);
-    $stmt->bindValue(4, getTimeFormat($startTime));
-    $stmt->bindValue(5, getTimeFormat($startTime + 1));
+    $stmt->bindValue(4, substr('00' . $h, -2).":00");
+    $stmt->bindValue(5, substr('00' . $h+1, -2).":00");
     $stmt->execute();
     $res = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     $scheduleList[] = $res;
   
-    if (!empty($res)) $flag = 1;
+    if (!empty($res)) $scheduleFlag = 1;
   }
- // var_dump($scheduleList);
- // exit;
-  return $flag === 1 ? $scheduleList : 0;
+  return $scheduleFlag === 1 ? $scheduleList : 0;
 }
 
 function selectSchedule($scheduleId){
@@ -184,81 +109,45 @@ function fetchAttendeeList($attendeeIdList)
     return $attendeeList;
 }
 
-
-function calcFreeTime($displayEmpList, $week)
+function updateSchedule($empId, $date, $startTime, $endTime, $title, $memo, $attendeesIdList, $scheduleId)
 {
   global $dbh;
-  $interval = 0.25; // 0.25h間隔で計算
-  for ($i = 0; $i < 24; $i += $interval) {
-    foreach ($week as $key1 => $date) {
-      $flag = 0;
-      foreach ($displayEmpList as $displayEmp) {
-
-        $sql = "SELECT * FROM schedule WHERE (emp_id = ? OR attendees_id LIKE ?) AND date = ? AND start_time < ? AND end_time > ? ORDER BY start_time ASC";
-
-        $stmt = $dbh->prepare($sql);
-        $stmt->bindValue(1, $displayEmp['emp_id']);
-        $stmt->bindValue(2, '%|' . $displayEmp['emp_id']);
-        $stmt->bindValue(3, $date);
-        $stmt->bindValue(4, getTimeFormat($i + $interval));
-        $stmt->bindValue(5, getTimeFormat($i));
-        $stmt->execute();
-        $res = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        if(!empty($res)) {
-       //   $scheduleList[$key2][$key1][$i] = $res; 
-          $flag = 1;
-        }
-      }
-      if (empty($flag)) {
-     //   var_dump($i);
-        //      $freeTimeList[$key][] = $i;
-        $freeTimeList[$key1][] = getTimeFormat($i) . "~" . getTimeFormat($i + $interval);
-      }
-    }
-    // var_dump($freeTimeList[0]);
-  }
-
-  $max = 0;
-  for ($key1 = 0; $key1 < 7; $key1++) {
-    $count = count($freeTimeList[$key1]);
-var_dump($count);
-//exit;
-    $i = 0;
-    $cnt = 0;
-    for($j=0; $j<$count; $j++){
-      if (substr($freeTimeList[$key1][$i], -5) === substr($freeTimeList[$key1][$i + 1], 0, 5)) {
-        $freeTimeList[$key1][$i] = substr($freeTimeList[$key1][$i], 0, 5) . "~" . substr($freeTimeList[$key1][$i+1], -5);
-        
-        array_splice($freeTimeList[$key1], $i+1, 1);
-        $cnt++;
-       // unset($freeTimeList[$key1][$j]);
-    }else{
-      $i++;
-    }
-  }
-  if($max < ($count - $cnt)){
-    $max = $count - $cnt;
-  }
-
-  }
- // var_dump($scheduleList[1]);
-  //var_dump($freeTimeList);
-  var_dump($max);
- // exit;
-  return array($freeTimeList, $max);
+  var_dump($scheduleId);
+  // exit;
+  $sql = "UPDATE schedule SET emp_id = ?, date = ?, start_time = ?, end_time = ?, title = ?, memo = ?, attendees_id = ? WHERE id = ?";
+  $stmt = $dbh->prepare($sql);
+  $stmt->bindValue(1, $empId);
+  $stmt->bindValue(2, $date);
+  $stmt->bindValue(3, $startTime);
+  $stmt->bindValue(4, $endTime);
+  $stmt->bindValue(5, $title);
+  $stmt->bindValue(6, $memo);
+  $stmt->bindValue(7, implode('|', $attendeesIdList));
+  $stmt->bindValue(8, $scheduleId);
+  $stmt->execute();
 }
 
-
-function getTimeFormat($time)
+function deleteSchedule($scheduleId)
 {
-  $hour = floor($time);
-  $minute = ($time - $hour) * 60;
-  return substr('00' . $hour, -2) . ":" . substr('00' . $minute, -2);
+  global $dbh;
+  $sql = "DELETE FROM schedule WHERE id = ?";
+  $stmt = $dbh->prepare($sql);
+  $stmt->bindValue(1, $scheduleId);
+  $stmt->execute();
 }
 
 
+/* 社員情報テーブル(emp)のDB処理 */
+function selectEmp($empId)
+{
+  global $dbh;
+  $sql = "SELECT emp_id, emp_name, dept_name FROM emp LEFT OUTER JOIN dept ON emp.dept_id = dept.dept_id WHERE emp.emp_id = ?";
+  $stmt = $dbh->prepare($sql);
+  $stmt->bindValue(1, $empId);
+  $stmt->execute();
+  return $stmt->fetch(PDO::FETCH_ASSOC);
+}
 
-/* ログイン関係 */
 function insertEmp($empId, $empName, $deptId, $password){
   global $dbh;
   $sql = "INSERT INTO emp (emp_id, emp_name, dept_id, password) VALUES (?, ?, ?, ?)";
@@ -273,10 +162,30 @@ function insertEmp($empId, $empName, $deptId, $password){
   return $res;
 }
 
+function selectEmpPass($empId){
+  global $dbh;
+  $sql = "SELECT emp_id, password FROM emp WHERE emp_id = ?";
+  $stmt = $dbh->prepare($sql);
+  $stmt->bindValue(1, $empId);
+  $stmt->execute();
+  return $stmt->fetch(PDO::FETCH_ASSOC);
+}
 
 
+/* 部署情報テーブル(dept)のDB処理 */
+function selectDept()
+{
+  global $dbh;
+  $sql = "SELECT * from dept";
+  $stmt = $dbh->query($sql);
+  return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+/* エスケープ処理 */
 function escape($word)
 {
   $res = htmlspecialchars($word, ENT_QUOTES, 'UTF-8');
   return $res;
 }
+
+?>

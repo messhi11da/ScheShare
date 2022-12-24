@@ -15,7 +15,7 @@ if (isset($_POST['submit_register'])) {
     elseif (!is_numeric($empId)) $error[] = '社員番号は数字で入力してください。';
     else {
         $res = selectEmp($empId);
-      //  var_dump($res);
+        //  var_dump($res);
         if ($res != false) $error[] = 'この社員番号は既に登録されています。';
     }
     if (empty($password)) $error[] = 'パスワードを入力してください。';
@@ -24,14 +24,14 @@ if (isset($_POST['submit_register'])) {
     if (empty($deptId)) $error[] = '所属部署を選択してください。';
 
     if (empty($error)) {
-            $res = insertEmp($empId, $empName, $deptId, $password);
-            if ($res) {
-                $_SESSION['user_id'] = $empId;
-                header('Location: http://localhost/ScheShare/index.php');
-                exit;
-            }else {
-                $error[] = 'エラー：登録できませんでした。';
-            }
+        $res = insertEmp($empId, $empName, $deptId, $password);
+        if ($res) {
+            $_SESSION['user_id'] = $empId;
+            header('Location: http://localhost/ScheShare/index.php');
+            exit;
+        } else {
+            $error[] = 'エラー：登録できませんでした。';
+        }
     }
     var_dump($error);
     //  exit;
@@ -51,10 +51,14 @@ if (isset($_POST['submit_register'])) {
 </head>
 
 <body>
-    <h2>ScheShare</h2>
-    <p>複数ユーザーでスケジュールを共有できるアプリです。</p>
+    <div style="text-align: center;">
+        <h1><a href="index.php">ScheShare</a></h1>
+        <p>複数ユーザーでスケジュールを共有できるアプリです。</p>
+    </div>
 
-    <div class="display-elem">
+    <form class="login-form" action="" method="post">
+        
+        <!-- 入力エラー表示 -->
         <?php if (!empty($error)) : ?>
             <ul>
                 <?php foreach ($error as $err) : ?>
@@ -62,33 +66,42 @@ if (isset($_POST['submit_register'])) {
                 <?php endforeach; ?>
             </ul>
         <?php endif; ?>
-        <form id="register-form" action="" method="post">
-            <label id="emp_id">ID(社員番号):</label>
-            <br>
-            <input for="emp_id" type="text" name="emp_id">
-            <br>
-            <label id="emp_name">名前:</label>
-            <br>
-            <input for="emp_name" type="text" name="emp_name">
-            <br>
-            <label id="password">パスワード:</label>
-            <br>
-            <input type="password" name="password">
-            <br>
-            <label id="dept">所属部署名:</label>
-            <br>
-            <select name="dept_id">
-                <option value="0">所属部署</option>
-                <?php foreach ($deptList as $dept) : ?>
-                    <option value="<?= $dept['dept_id'] ?>"><?= $dept['dept_name'] ?></option>
-                <?php endforeach; ?>
-            </select>
-            <br>
-            <button id="" type="submit" name="submit_register" value="1">登録</button>
+        
+        <!-- 登録フォーム -->
+        <table align="center">
+            <tr>
+                <td>ID(社員番号):</td>
+                <td><input type="text" name="emp_id"></td>
+            </tr>
+            <tr>
+                <td>名前:</td>
+                <td><input type="text" name="emp_name"></td>
+            </tr>
+            <tr>
+                <td>パスワード:</td>
+                <td><input type="password" name="password"></td>
+            </tr>
+            <tr>
+                <td>所属部署:</td>
+                <td>
+                    <select name="dept_id">
+                        <option value="0">所属部署</option>
+                        <?php foreach ($deptList as $dept) : ?>
+                            <option value="<?= $dept['dept_id'] ?>"><?= $dept['dept_name'] ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </td>
+            </tr>
+        </table>
+        <br>
+        <div style="text-align: center;">
+            <button type="submit" name="submit_register" value="1">登録</button>
             <a href="login.php">ログイン画面へ</a>
+        </div>
 
-        </form>
-    </div>
+
+    </form>
+
 
 </body>
 
