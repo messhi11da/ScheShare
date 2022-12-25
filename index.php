@@ -103,7 +103,7 @@ require_once(dirname(__FILE__) . '/freetime.php');
             <?php endif; ?>
             <td style="opacity: <?= ($m2 < $m || $m2 > $m) ? "0.5" : "1" ?>">
               <a href="index.php?date=<?= $date2 ?>">
-                <?= ($m2 < $m || $m2 > $m) ? (int)$m . "/" . (int)$d2 : (int)$d2 ?>
+                <?= ($m2 < $m || $m2 > $m) ? (int)$m2 . "/" . (int)$d2 : (int)$d2 ?>
               </a>
             </td>
             <?php if (($day) % 7 == 6) : ?>
