@@ -1,12 +1,8 @@
 
-
-
-
-header h1 a, #calendar-area a{
+header h1 a, #calendar-area a, .login-header a{
   text-decoration: none;
   color: #000000;
 }
-
 
 header{
   display: flex;
@@ -35,6 +31,9 @@ header div, header h1{
   border-radius: 1rem;
   border: 3px solid #000000;
   padding: 1rem;
+}
+.input-keyword{
+  width: 70%;
 }
 .display-btn{
   position: absolute;
@@ -69,18 +68,16 @@ header div, header h1{
   width: 100%;
   font-weight: bold;
 }
-
-.diff-month{
-  opacity: 0.5;
+#calendar-table td:hover{
+  background-color: #f0f0f0;
 }
-
 
 /* スケジュール表 */
 #schedule-wrapper{
   width: 80%;
   margin: 1rem auto;
 }
-#schedule-header{
+.schedule-header{
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -102,7 +99,7 @@ header div, header h1{
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  border: 2px solid #CCCCCC;
+  border: 1px solid #000000;
 }
 .schedule-table{
   flex-basis: 90%;
@@ -120,35 +117,35 @@ header div, header h1{
   padding: 5px;
   background-color: #FFFFCC;
   border: 2px solid #CCCCCC;
-
+  cursor: pointer;
 }
+.schedule-item:hover{
+  background-color: #fffff3;
+}
+
 .schedule-table td{
   vertical-align: top;
 }
 
-/* スケジュール詳細画面・フォーム */
-.display-elem{
+/* スケジュール詳細画面・登録＆編集フォーム */
+.display-schedule{
   position: fixed;
   top: 50%;
   left: 50%;
-  transform: translateY(-50%);
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);
   padding: 1.5rem;
   border: 2px solid #000000;
   border-radius: 10px;
   background-color: #FFFFFF;
 }
 
-.display-header{
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-
 /* ログイン・登録フォーム */
+.login-header{
+  margin-top: 5rem;
+  text-align: center;
+}
 .login-form{
-  position: fixed;
+  position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);

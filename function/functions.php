@@ -1,7 +1,6 @@
 <?php
 require_once(dirname(__FILE__) . '/db_connect.php');
 
-
 /* カレンダー作成関係 */
 function createCalendar($m, $y)
 {
@@ -25,7 +24,6 @@ function createCalendar($m, $y)
 function getToday()
 {
   $dateObj = new DateTime('today');
-  //  $today = $dateObj -> format('Y-n-j');
   $today = $dateObj->format('Y-m-d');
   return $today;
 }
@@ -39,7 +37,6 @@ function getWeekName($dayNum)
 function getWeek($theDate, $dateArray)
 {
   $dateObj = new DateTime($theDate);
-  //var_dump($theDate);
   foreach ($dateArray as $key => $date) {
     if ($date === $theDate) {
       $sundayKey = $key - $dateObj->format('w');
@@ -75,21 +72,22 @@ function selectWeekSchedule($empId, $week, $h)
     $sql = "SELECT id, date, title, memo, attendees_id, TIME_FORMAT(start_time, '%k:%i') AS start_time, TIME_FORMAT(end_time, '%k:%i') AS end_time FROM schedule WHERE (emp_id = ? OR attendees_id LIKE ?) AND date = ? AND start_time >= ? AND start_time < ? ORDER BY start_time ASC";
     $stmt = $dbh->prepare($sql);
     $stmt->bindValue(1, $empId);
-    $stmt->bindValue(2, '%|' . $empId.'%');
+    $stmt->bindValue(2, '%|' . $empId . '%');
     $stmt->bindValue(3, $date);
-    $stmt->bindValue(4, substr('00' . $h, -2).":00");
-    $stmt->bindValue(5, substr('00' . $h+1, -2).":00");
+    $stmt->bindValue(4, substr('00' . $h, -2) . ":00");
+    $stmt->bindValue(5, substr('00' . $h + 1, -2) . ":00");
     $stmt->execute();
     $res = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
+
     $scheduleList[] = $res;
-  
+
     if (!empty($res)) $scheduleFlag = 1;
   }
   return $scheduleFlag === 1 ? $scheduleList : 0;
 }
 
-function selectSchedule($scheduleId){
+function selectSchedule($scheduleId)
+{
   global $dbh;
 
   $sql = "SELECT *, TIME_FORMAT(start_time, '%k:%i') AS start_time2, TIME_FORMAT(end_time, '%k:%i') AS end_time2 FROM schedule WHERE id = ?";
@@ -99,21 +97,10 @@ function selectSchedule($scheduleId){
   return $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
-// 文字列情報から参加者の情報を抜き出す
-function fetchAttendeeList($attendeeIdList)
-{
-    $attendeeIdArray = explode('|', $attendeeIdList);
-    foreach ($attendeeIdArray as $attendeeId) {
-        $attendeeList[] = selectEmp($attendeeId);
-    }
-    return $attendeeList;
-}
-
 function updateSchedule($empId, $date, $startTime, $endTime, $title, $memo, $attendeesIdList, $scheduleId)
 {
   global $dbh;
-  var_dump($scheduleId);
-  // exit;
+
   $sql = "UPDATE schedule SET emp_id = ?, date = ?, start_time = ?, end_time = ?, title = ?, memo = ?, attendees_id = ? WHERE id = ?";
   $stmt = $dbh->prepare($sql);
   $stmt->bindValue(1, $empId);
@@ -122,7 +109,7 @@ function updateSchedule($empId, $date, $startTime, $endTime, $title, $memo, $att
   $stmt->bindValue(4, $endTime);
   $stmt->bindValue(5, $title);
   $stmt->bindValue(6, $memo);
-  $stmt->bindValue(7, implode('|', $attendeesIdList));
+  $stmt->bindValue(7, implode('|', array_unique($attendeesIdList)));
   $stmt->bindValue(8, $scheduleId);
   $stmt->execute();
 }
@@ -148,21 +135,21 @@ function selectEmp($empId)
   return $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
-function insertEmp($empId, $empName, $deptId, $password){
+function insertEmp($empId, $empName, $deptId, $password)
+{
   global $dbh;
   $sql = "INSERT INTO emp (emp_id, emp_name, dept_id, password) VALUES (?, ?, ?, ?)";
-  $stmt = $dbh -> prepare($sql);
-  $stmt -> bindValue(1, $empId);
-  $stmt -> bindValue(2, $empName);
-  $stmt -> bindValue(3, $deptId);
-  $stmt -> bindValue(4, password_hash($password, PASSWORD_DEFAULT));
-  var_dump($stmt);
- // exit;
-  $res = $stmt -> execute();
+  $stmt = $dbh->prepare($sql);
+  $stmt->bindValue(1, $empId);
+  $stmt->bindValue(2, $empName);
+  $stmt->bindValue(3, $deptId);
+  $stmt->bindValue(4, password_hash($password, PASSWORD_DEFAULT));
+  $res = $stmt->execute();
   return $res;
 }
 
-function selectEmpPass($empId){
+function selectEmpPass($empId)
+{
   global $dbh;
   $sql = "SELECT emp_id, password FROM emp WHERE emp_id = ?";
   $stmt = $dbh->prepare($sql);
@@ -181,11 +168,70 @@ function selectDept()
   return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
+/* ログインフォーム 入力チェック */
+function loginErrCheck($empId, $password)
+{
+  $empId = removeSpace(escape($empId));
+  $password = removeSpace(escape($password));
+
+  $error = [];
+  if (empty($empId)) $error[] = '社員番号を入力してください。';
+  elseif (!is_numeric($empId)) $error[] = '社員番号は数字で入力してください。';
+  if (empty($password)) $error[] = 'パスワードを入力してください。';
+  elseif (mb_strlen($password) < 8) $error[] = 'パスワードは8文字以上で入力してください。';
+
+  if (empty($error)) {
+    $emp = selectEmpPass($empId);
+    if ($emp != false && password_verify($password, $emp['password'])) {
+      $_SESSION['user_id'] = $emp['emp_id']; // ログイン成功
+      header('Location: http://localhost/ScheShare/index.php');
+      exit();
+    } else $error[] = 'IDかパスワードが間違っています。';
+  }
+  return $error;
+}
+
+/* 新規ユーザー登録フォーム 入力チェック */
+function registerErrCheck($empId, $empName, $password, $deptId){
+  $empId = removeSpace(escape($empId));
+  $empName = removeSpace(escape($empName));
+  $password = removeSpace(escape($password));
+  $deptId = escape($deptId);
+  $error = [];
+
+  if (empty($empId)) $error[] = '社員番号を入力してください。';
+  elseif (!is_numeric($empId)) $error[] = '社員番号は数字で入力してください。';
+  else {
+      $res = selectEmp($empId);
+      if ($res != false) $error[] = 'この社員番号は既に登録されています。';
+  }
+  if (empty($password)) $error[] = 'パスワードを入力してください。';
+  elseif (mb_strlen($password) < 8) $error[] = 'パスワードは8文字以上を入力してください。';
+  if (empty($empName) || is_numeric($empName)) $error[] = '名前を正しく入力してください';
+  if (empty($deptId)) $error[] = '所属部署を選択してください。';
+
+  if (empty($error)) {
+      $res = insertEmp($empId, $empName, $deptId, $password);
+      if ($res) {
+          $_SESSION['user_id'] = $empId;
+          header('Location: http://localhost/ScheShare/index.php');
+          exit;
+      } else {
+          $error[] = 'エラー：登録できませんでした。';
+      }
+  }
+  return $error;
+}
+
+/* 文字列の中の空白を除去 */
+function removeSpace($word){
+  $word = preg_replace('/( |　)/', '', $word);
+  return $word;
+}
+
 /* エスケープ処理 */
 function escape($word)
 {
   $res = htmlspecialchars($word, ENT_QUOTES, 'UTF-8');
   return $res;
 }
-
-?>

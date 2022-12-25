@@ -1,13 +1,10 @@
 <?php
-require_once(dirname(__FILE__) . '/db_connect.php');
-require_once(dirname(__FILE__) . '/function.php');
+require_once(dirname(__FILE__,2) . '/function/functions.php');
 session_start();
 
 if (isset($_POST['displayEmpList'], $_POST['week'])) {
     $displayEmpList = $_POST['displayEmpList'];
     $week = $_POST['week'];
-
-   // echo var_dump($checkedList);
 
     try {
         global $dbh;
@@ -21,7 +18,7 @@ if (isset($_POST['displayEmpList'], $_POST['week'])) {
       
               $stmt = $dbh->prepare($sql);
               $stmt->bindValue(1, $empId);
-              $stmt->bindValue(2, '%|' . $empId);
+              $stmt->bindValue(2, '%|' . $empId.'%');
               $stmt->bindValue(3, $date);
               $stmt->bindValue(4, getTimeFormat($h + $interval));
               $stmt->bindValue(5, getTimeFormat($h));
@@ -32,12 +29,9 @@ if (isset($_POST['displayEmpList'], $_POST['week'])) {
               }
             }
             if ($freeTimeFlag === 1) {
-           //   var_dump($i);
-              //      $freeTimeList[$key][] = $i;
               $freeTimeList[$day][] = getTimeFormat($h) . "~" . getTimeFormat($h + $interval);
             }
           }
-          // var_dump($freeTimeList[0]);
         }
       
         // 連続する空き時間のフォーマットを結合させる処理
@@ -51,13 +45,11 @@ if (isset($_POST['displayEmpList'], $_POST['week'])) {
               $freeTimeList[$day2][$i] = substr($freeTimeList[$day2][$i], 0, 5) . "~" . substr($freeTimeList[$day2][$i+1], -5);
               array_splice($freeTimeList[$day2], $i+1, 1);
               $cnt++;
-             // unset($freeTimeList[$key1][$j]);
           }else{
             $i++;
           }
         }
-    
-        echo var_dump(count($freeTimeList[$day2]));
+
         if($maxCount < count($freeTimeList[$day2])) {
             $maxCount = count($freeTimeList[$day2]);
         }
@@ -93,7 +85,14 @@ if (isset($_POST['displayEmpList'], $_POST['week'])) {
 
 }
 
+function getTimeFormat($time)
+{
+  $hour = floor($time);
+  $minute = ($time - $hour) * 60;
+  return substr('00' . $hour, -2) . ":" . substr('00' . $minute, -2);
+}
 
+?>
 
 
 

@@ -1,49 +1,17 @@
 <?php
-require_once(dirname(__FILE__) . '/function.php');
+require_once(dirname(__FILE__) . '/function/functions.php');
 session_start();
 
 $deptList = selectDept(); // 部署リストを取得
 
-
 if (isset($_POST['submit_register'])) {
-    $empId = preg_replace('/( |　)/', '', escape($_POST['emp_id']));
-    $empName = preg_replace('/( |　)/', '', escape($_POST['emp_name']));
-    $password = preg_replace('/( |　)/', '', escape($_POST['password']));
-    $deptId = escape($_POST['dept_id']);
-
-    if (empty($empId)) $error[] = '社員番号を入力してください。';
-    elseif (!is_numeric($empId)) $error[] = '社員番号は数字で入力してください。';
-    else {
-        $res = selectEmp($empId);
-        //  var_dump($res);
-        if ($res != false) $error[] = 'この社員番号は既に登録されています。';
-    }
-    if (empty($password)) $error[] = 'パスワードを入力してください。';
-    elseif (mb_strlen($password) < 8) $error[] = 'パスワードは8文字以上を入力してください。';
-    if (empty($empName) || is_numeric($empName)) $error[] = '名前を正しく入力してください';
-    if (empty($deptId)) $error[] = '所属部署を選択してください。';
-
-    if (empty($error)) {
-        $res = insertEmp($empId, $empName, $deptId, $password);
-        if ($res) {
-            $_SESSION['user_id'] = $empId;
-            header('Location: http://localhost/ScheShare/index.php');
-            exit;
-        } else {
-            $error[] = 'エラー：登録できませんでした。';
-        }
-    }
-    var_dump($error);
-    //  exit;
-
+    $error = registerErrCheck($_POST['emp_id'], $_POST['emp_name'], $_POST['password'], $_POST['dept_id']);
 }
 
 ?>
 
 <!DOCTYPE html>
 <html>
-
-
 <head>
     <meta charset="utf-8">
     <title>ScheShare - ユーザー登録画面</title>
@@ -51,7 +19,7 @@ if (isset($_POST['submit_register'])) {
 </head>
 
 <body>
-    <div style="text-align: center;">
+    <div class="login-header">
         <h1><a href="index.php">ScheShare</a></h1>
         <p>複数ユーザーでスケジュールを共有できるアプリです。</p>
     </div>

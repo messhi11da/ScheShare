@@ -1,6 +1,5 @@
 <?php
-require_once(dirname(__FILE__) . '/db_connect.php');
-require_once(dirname(__FILE__) . '/function.php');
+require_once(dirname(__FILE__, 2) . '/function/functions.php');
 session_start();
 
 if (isset($_POST['dept_id'], $_POST['keyword'])) {
@@ -8,14 +7,12 @@ if (isset($_POST['dept_id'], $_POST['keyword'])) {
     $keyword = $_POST['keyword'];
     $checkedList = $_POST['checked_list'];
 
-   // echo var_dump($checkedList);
-
     try {
         global $dbh;
         $sql = "SELECT emp_id, emp_name, dept_name FROM emp LEFT OUTER JOIN dept ON emp.dept_id = dept.dept_id WHERE ";
 
-        $keyword = preg_replace('/( |　)/', '', $keyword);
-        if(!empty($keyword)){
+        $emptyCheck = removeSpace($keyword);
+        if(!empty($emptyCheck)){
             $keywordArray = preg_split('/( |　)/', $keyword);
             //var_dump($keywordArray);
             for ($i = 0; $i < count($keywordArray); $i++) {
@@ -48,9 +45,9 @@ if (isset($_POST['dept_id'], $_POST['keyword'])) {
         echo "<table align='center'>";
         foreach($empList as $emp){
             echo "<tr>";
-            echo "<td>".$emp["emp_id"]."</td>";
-            echo "<td>".$emp["dept_name"]."</td>";
-            echo "<td>".$emp["emp_name"]."</td>";
+            echo "<td>".escape($emp["emp_id"])."</td>";
+            echo "<td>".escape($emp["dept_name"])."</td>";
+            echo "<td>".escape($emp["emp_name"])."</td>";
             if($emp['emp_id'] === $_SESSION['user_id']) echo "<td></td>"; // ログインユーザーにチェックボックスは表示しない
             else echo "<td><input class='input-check' type='checkbox' name='checked_emp[]' value='".$emp['emp_id']."' ".isChecked($emp['emp_id'], $checkedList)."></td>";
             echo "</tr>";
