@@ -114,7 +114,7 @@ $(function() {
         $scheduleDetail.css("display", "none");
         $delBtn.css("display", "none");
         $formTitle.text("新規スケジュール登録");
-        $formSubmitBtn.text("登録");ƒ
+        $formSubmitBtn.text("登録");
         $formSubmitBtn.attr("name", "submit_add");
         $form.css("display", "block");
       }).fail(function() {
