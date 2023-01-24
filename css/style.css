@@ -1,0 +1,197 @@
+/* 共通部分 */
+*{
+  margin: 0;
+  padding: 0;
+}
+.header, footer{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  vertical-align: middle;
+  padding: 1rem;
+}
+header, footer{ 
+  color: #FFFFFF;
+  height: 5rem;
+  background-color: #4e4e4e; 
+  text-align: center;
+}
+body{
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #ffffff;
+}
+footer{ margin-top: auto;}
+
+ul{
+  padding-left: 0;
+  margin: 0;
+}
+li{ list-style: none; }
+
+button{
+  border-radius: 0.2rem;
+  padding: 0.2rem 0.5rem;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  letter-spacing: 0.1rem;
+}
+button:hover, .schedule-item:hover { opacity: 0.5;}
+
+.delete-btn{ color: #FFFFFF; }
+.delete-btn{ background-color: rgb(255, 126, 126) };
+
+input, select, textarea{
+  padding: 0.2rem;
+  border-radius: 0.2rem;
+}
+textarea { 
+  min-height: 1rem;
+  resize: vertical; 
+}
+
+a{
+  text-decoration: none;
+  color: #000000;
+}
+.a-tag{
+  padding-bottom: 0.2em;
+  text-decoration: underline ;
+  color: rgb(158, 158, 253);
+}
+.a-tag:hover {color: rgb(255, 97, 39);}
+
+h2, h3{ text-align: center; }
+
+#wrapper{
+  width: 90%;
+  margin: 0 auto;
+}
+
+.container{
+  display: flex;
+  justify-content: space-around;
+}
+
+/* 社員検索エリア */
+.search-area{
+  position: relative;
+  flex-basis: 25%;
+  margin: 0 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid #000000;
+  padding: 0.5rem 1rem;
+  min-height: 200px;
+}
+
+.display-btn{
+  position: absolute;
+  width: 80%;
+  bottom: 0;
+  left: 10%;
+}
+.emp-table{
+  height: 150px;
+  overflow: auto;
+  padding: 0 1rem;
+  background-color: rgb(252, 252, 252);
+}
+.emp-table > table{
+  width: 100%; 
+  text-align: center;
+}
+.emp-table > table tr:hover{ opacity: 0.5; }
+
+/* カレンダー */
+#calendar-area{
+  flex-basis: 70%;
+  padding: 1rem;
+}
+#calendar-area, #calendar-area td{
+  text-align: center;  
+}
+#calendar-table{
+  width: 90%;
+  height: 80%;
+  margin: 0 auto;
+  table-layout: fixed;
+}
+#calendar-table a{
+  display: inline-block;
+  height: 100%;
+  width: 100%;
+  font-weight: bold;
+}
+#calendar-table td:hover{ background-color: #f0f0f0;}
+
+/* スケジュール表 */
+#schedule-area{
+  width: 90%;
+  margin: 1rem auto;
+}
+.schedule-header{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+#schedule-header button{
+  margin: 0.5rem 1rem;
+  border-radius: 0.5rem;
+}
+
+.emp-profile{
+  flex-basis: 10%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid #000000;
+}
+.schedule-table{
+  flex-basis: 90%;
+  width: 800px;
+  table-layout:fixed;
+  min-height:250px;
+}
+.schedule-item{
+  line-height: 1.1;
+  padding: 5px;
+  background-color: #ffffdc;
+  border: 2px solid #CCCCCC;
+  cursor: pointer;
+}
+.schedule-table td{ vertical-align: top; }
+
+/* スケジュール詳細画面・登録＆編集フォーム */
+.display-elem{
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 0 1rem 1rem;
+  border: 1px solid #000000;
+  border-radius: 0.5rem;
+  background-color: #FFFFFF;
+}
+
+/* ログイン・登録フォーム */
+.login-form{
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+.login-form td{
+  height: 3rem;
+}
+.login-form > div{
+  border: 1px solid #000000;
+  border-radius: 1rem;
+  padding: 2rem;
+}
+.error-message{
+  width: 80%;
+  margin: 0 auto 0.5rem;
+}
