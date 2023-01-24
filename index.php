@@ -88,8 +88,8 @@ foreach ($_SESSION['display_emp'] as $displayEmp) {
         </form>
 
         <div>
-          <button id="add-btn" type="button">新規スケジュール追加</button>
-          <button id="free-time-btn" type="button" data-id='<?= json_encode($displayEmpList); ?>' data-week='<?= json_encode($week) ?>'>空き時間を表示</button>
+          <button id="add-btn" class="blue" type="button">新規スケジュール追加</button>
+          <button id="free-time-btn" class="green" type="button" data-id='<?= json_encode($displayEmpList); ?>' data-week='<?= json_encode($week) ?>'>空き時間を表示</button>
         </div>
       </div>
 

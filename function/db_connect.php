@@ -14,7 +14,7 @@ function dbConnect(){
         $dbh = new PDO($dsn, $user, $password);
         $dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     } catch (PDOException $e) {
-        echo 'DB接続エラー: ' . $e->getMessage();
+        echo '接続エラー: ' . $e->getMessage();
         exit;
     }
     return $dbh;

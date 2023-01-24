@@ -40,11 +40,14 @@ button{
 }
 button:hover, .schedule-item:hover { opacity: 0.5;}
 
-.delete-btn{ color: #FFFFFF; }
-.delete-btn{ background-color: rgb(255, 126, 126) };
+.delete-btn, .blue, .green{ color: #FFFFFF; }
+
+.delete-btn{ background-color: rgb(255, 126, 126); }
+.blue{ background-color: rgb(133, 144, 213); }
+.green{ background-color: rgb(116, 202, 139); }
 
 input, select, textarea{
-  padding: 0.2rem;
+  padding: 0.3rem;
   border-radius: 0.2rem;
 }
 textarea { 
@@ -59,7 +62,8 @@ a{
 .a-tag{
   padding-bottom: 0.2em;
   text-decoration: underline ;
-  color: rgb(158, 158, 253);
+  color: rgb(124, 124, 233);
+  cursor: pointer;
 }
 .a-tag:hover {color: rgb(255, 97, 39);}
 
@@ -162,7 +166,7 @@ h2, h3{ text-align: center; }
   border: 2px solid #CCCCCC;
   cursor: pointer;
 }
-.schedule-table td{ vertical-align: top; }
+.schedule-table td, .display-elem td{ vertical-align: top; }
 
 /* スケジュール詳細画面・登録＆編集フォーム */
 .display-elem{

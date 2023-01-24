@@ -63,7 +63,7 @@ if (isset($_POST['schedule_id'])) {
             echo "<input type='time' name='end' value='" . escape($schedule['end_time']) . "'></td>";
             echo "<tr>";
             echo "<td>メモ：</td>";
-            echo "<td><textarea name='memo' value='" . escape($schedule['memo']) . "'></textarea></td>";
+            echo "<td><textarea name='memo'>".escape($schedule['memo'])."</textarea></td>";
             echo "</tr>";
             echo "<tr>";
             echo "<td>参加者：</td>";
